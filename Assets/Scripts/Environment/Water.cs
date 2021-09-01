@@ -8,7 +8,6 @@ public class Water : MonoBehaviour
     [SerializeField] float object_modifier;
 
 
-
     private void OnTriggerEnter2D(Collider2D collision)
     {
         Debug.Log(collision.gameObject.name + " entered water");

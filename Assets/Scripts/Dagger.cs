@@ -5,7 +5,7 @@ using UnityEngine;
 public class Dagger : MonoBehaviour
 {
     [SerializeField] GameObject dgr_fizzle;
-    public Player owner;
+    public DaggerController owner;
     Rigidbody2D rb;
 
     //bool hit;

@@ -18,8 +18,21 @@ public class Player : MonoBehaviour
     [SerializeField] float cam_speed;
     Vector2 respawn_pos;
 
+    bool has_control = true;
+    public float grav_coeff = 1;
+
     [SerializeField] bool grounded;
 
+    private void Awake()
+    {
+        respawn_pos = transform.position;
+        rb = GetComponent<Rigidbody2D>();
+        cam = Camera.main.transform;
+    //    dagger_prefab = Resources.Load("Dagger") as GameObject;
+    //    hint_line = GetComponent<LineRenderer>();
+    }
+
+    /*
     GameObject dagger_prefab;
     GameObject dagger;
     [SerializeField] float dgr_throw_coeff;
@@ -28,19 +41,8 @@ public class Player : MonoBehaviour
     [SerializeField] GameObject charge_bar;
     float charge = 0;
 
-    bool has_control = true;
-    public float grav_coeff = 1;
 
-    private void Awake()
-    {
-        respawn_pos = transform.position;
-        rb = GetComponent<Rigidbody2D>();
-        cam = Camera.main.transform;
-        dagger_prefab = Resources.Load("Dagger") as GameObject;
-        hint_line = GetComponent<LineRenderer>();
-    }
-
-    // Update is called once per frame
+     Update is called once per frame
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.O))
@@ -63,7 +65,7 @@ public class Player : MonoBehaviour
             hint_rescale -= 0.01f;
             Debug.Log(hint_rescale);
         }
-
+    
         if (dagger == null)
         {
             if (Input.GetMouseButton(0))
@@ -87,27 +89,21 @@ public class Player : MonoBehaviour
             }
         }
     }
-
-    private void LateUpdate()
-    {
-        camMove();
-    }
-
     void chargeThrow()
     {
         charge += Time.deltaTime / dgr_charge_time;
         charge = Mathf.Clamp(charge, dgr_min_charge, 1);
-
+    
         Vector3 s = charge_bar.transform.localScale;
         s.x = charge;
         charge_bar.transform.localScale = s;
-
+    
         Vector2 dir = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0)) - transform.position;
         dir.Normalize();
         renderArc(dir * charge * charge * dgr_throw_coeff);
-
+    
     }
-
+    
     void throwDagger()
     {
         if (charge < dgr_min_charge)
@@ -119,7 +115,7 @@ public class Player : MonoBehaviour
         if (dir.x < 0)
             dagger.GetComponent<SpriteRenderer>().flipY = true;
         dagger.GetComponent<Dagger>().owner = this;
-
+    
         // wipe charge
         charge = 0;
         Vector3 s = charge_bar.transform.localScale;
@@ -128,18 +124,18 @@ public class Player : MonoBehaviour
         // wipe line renderer
         hint_line.enabled = false;
     }
-
+    
     public void forgetDagger()
     {
         dagger = null;
     }
-
+    
     public void collectDagger()
     {
         Destroy(dagger);
         dagger = null;
     }
-
+    
     void blink()
     {        
         #region spatial_checks
@@ -147,7 +143,7 @@ public class Player : MonoBehaviour
         Vector3 hitloc;
         Dagger dgr = dagger.GetComponent<Dagger>();
         //List<Vector2> contacts = dgr.getHitPosList();
-
+    
         if (dgr.isLanded())
         {
             hitnorm = dgr.getHitNorm();
@@ -161,7 +157,7 @@ public class Player : MonoBehaviour
         
         Vector2 pos = dagger.transform.position + hitloc;
         Debug.DrawLine(transform.position, pos, Color.yellow, 5);
-
+    
         hitnorm.y /= 2;
         hitnorm.Normalize();
         Vector2 min_space = new Vector2(0.9f, 2f);
@@ -177,7 +173,7 @@ public class Player : MonoBehaviour
             clear = checkXSpace(ref pos, min_space);
         }
         Debug.DrawLine(dagger.transform.position + hitloc, pos, Color.green, 5);
-
+    
         if(clear)
         {
             transform.position = pos;
@@ -187,26 +183,26 @@ public class Player : MonoBehaviour
         rb.velocity = dagger.GetComponent<Rigidbody2D>().velocity;
         collectDagger();
     }
-
+    
     bool checkXSpace(ref Vector2 pos, Vector2 min_space)
     {
         Vector2 box_size = new Vector2(0.09f, 1.99f);
-
+    
         Vector2 Temp = pos;
         Temp.x += box_size.x / 2;
         RaycastHit2D right_hit = Physics2D.BoxCast(Temp, box_size, 0, Vector2.right, min_space.x / 2 - box_size.x / 2, LM);
         Debug.DrawRay(pos, Vector2.right * min_space.x / 2, Color.red, 3);
         Debug.DrawRay(pos + Vector2.right * min_space.x / 2, Vector2.up * box_size.y / 2, Color.red, 3);
         Debug.DrawRay(pos + Vector2.right * min_space.x / 2, Vector2.down * box_size.y / 2, Color.red, 3);
-
+    
         Temp = pos;
         Temp.x -= box_size.x / 2;
         RaycastHit2D left_hit = Physics2D.BoxCast(Temp, box_size, 0, Vector2.left, min_space.x / 2 - box_size.x / 2, LM);
         Debug.DrawRay(pos, Vector2.left * min_space.x / 2, Color.red, 3);
         Debug.DrawRay(pos + Vector2.left * min_space.x / 2, Vector2.up * box_size.y / 2, Color.red, 3);
         Debug.DrawRay(pos + Vector2.left * min_space.x / 2, Vector2.down * box_size.y / 2, Color.red, 3);
-
-
+    
+    
         if (right_hit && left_hit)
         {
             Debug.Log("No room (X)!");
@@ -234,11 +230,11 @@ public class Player : MonoBehaviour
         }
         return true;
     }
-
+    
     bool checkYSpace(ref Vector2 pos, Vector2 min_space)
     {
         Vector2 box_size = new Vector2(0.8f, 0.19f);
-
+    
         Vector2 Temp = pos;
         Temp.y += box_size.y / 2;
         RaycastHit2D up_hit = Physics2D.BoxCast(Temp, box_size, 0, Vector2.up, min_space.y / 2 - box_size.y / 2, LM);
@@ -246,7 +242,7 @@ public class Player : MonoBehaviour
         Debug.DrawRay(pos, Vector2.up * min_space.y / 2, Color.red, 3);
         Debug.DrawRay(pos + Vector2.up * min_space.y / 2, Vector2.left * box_size.x / 2, Color.red, 3);
         Debug.DrawRay(pos + Vector2.up * min_space.y / 2, Vector2.right * box_size.x / 2, Color.red, 3);
-
+    
         Temp = pos;
         Temp.y -= box_size.y / 2;
         RaycastHit2D down_hit = Physics2D.BoxCast(Temp, box_size, 0, Vector2.down, min_space.y / 2 - box_size.y / 2, LM);
@@ -254,7 +250,7 @@ public class Player : MonoBehaviour
         Debug.DrawRay(pos, Vector2.down * min_space.y / 2, Color.red, 3);
         Debug.DrawRay(pos + Vector2.down * min_space.y / 2, Vector2.left * box_size.x / 2, Color.red, 3);
         Debug.DrawRay(pos + Vector2.down * min_space.y / 2, Vector2.right * box_size.x / 2, Color.red, 3);
-
+    
         if (up_hit && down_hit)
         {
             Debug.Log("No room (Y)!");
@@ -277,7 +273,7 @@ public class Player : MonoBehaviour
         }
         return true;
     }
-
+    
     // hint line
     LineRenderer hint_line;
     //public float dgr_grav = 2.5f;
@@ -286,7 +282,7 @@ public class Player : MonoBehaviour
     float hint_rescale = 0.515f; // approximate gravity alignment correction. No fuckin clue why tho
     void renderArc(Vector2 vel)
     {
-
+    
         Vector3[] arc = new Vector3[hint_r_limit];
         arc[0] = transform.position;
         int t = 1;
@@ -296,7 +292,7 @@ public class Player : MonoBehaviour
             float x = vel.x * timestep;
             float y = vel.y * timestep - 0.5f * timestep * timestep * dagger_prefab.GetComponent<Rigidbody2D>().gravityScale * -Physics2D.gravity.y * hint_rescale;
             arc[t] = new Vector3(x, y) * 0.5f + transform.position;
-
+    
             RaycastHit2D hit = Physics2D.Linecast(arc[t - 1], arc[t], LM);
             if (hit)
             {
@@ -304,12 +300,13 @@ public class Player : MonoBehaviour
                 break;
             }
         }
-
+    
         hint_line.enabled = true;
         hint_line.positionCount = arc.Length;
         hint_line.SetPositions(arc);
         hint_line.positionCount = (t<arc.Length) ? t+1 : arc.Length;
     }
+    */
 
     /*
     *  MOVEMENT 
@@ -318,6 +315,11 @@ public class Player : MonoBehaviour
     {
         checkGrounded();
         move();
+    }
+
+    private void LateUpdate()
+    {
+        camMove();
     }
 
     void move()

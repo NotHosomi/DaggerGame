@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5014984586306008421}
   - component: {fileID: 5901603450801082243}
   - component: {fileID: 667584604029964281}
+  - component: {fileID: 8149935161994348994}
   - component: {fileID: 2168369091190735176}
   - component: {fileID: -4638731451508533988}
   - component: {fileID: 8605071133117169042}
@@ -109,9 +110,26 @@ MonoBehaviour:
   mv_gravity: 1
   mv_jumpforce: 15
   cam_speed: 0.2
+  grav_coeff: 1
   grounded: 1
-  dgr_throw_coeff: 30
-  dgr_charge_time: 0.8
+--- !u!114 &8149935161994348994
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 62684457556525655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5366a8480e0bddd4a8a62a9327f731e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  LM:
+    serializedVersion: 2
+    m_Bits: 1
+  dgr_throw_coeff: 20
+  dgr_weight: 2.5
+  dgr_charge_time: 1.5
   dgr_min_charge: 0.2
   charge_bar: {fileID: 6199166046745726579}
 --- !u!50 &2168369091190735176
