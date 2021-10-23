@@ -6,13 +6,12 @@ public class Dagger : MonoBehaviour
 {
     [SerializeField] GameObject dgr_fizzle;
     public DaggerController owner;
-    Rigidbody2D rb;
+    protected Rigidbody2D rb;
 
     //bool hit;
-    List<Vector2> hit_pos;
-    List<Vector2> hit_norm;
-    bool returning = false;
-    bool in_air = true;
+    protected List<Vector2> hit_pos;
+    protected List<Vector2> hit_norm;
+    protected bool in_air = true;
 
     private void Awake()
     {
@@ -42,8 +41,14 @@ public class Dagger : MonoBehaviour
             hit_norm.Add(collision.GetContact(i).normal);
             Debug.DrawRay(hit_pos[i], hit_norm[i], Color.blue, 5);
         }
+
+        OnHit(collision);
     }
 
+    protected virtual void OnHit(Collision2D collision)
+    { }
+
+    bool returning = false;
     public void pullBack()
     {
         if(returning)
@@ -54,6 +59,11 @@ public class Dagger : MonoBehaviour
         in_air = true;
         rb.constraints = RigidbodyConstraints2D.None;
         returning = true;
+    }
+
+    public virtual void alt()
+    {
+        fizzleDagger();
     }
 
     public Vector2 getHitPos(int i = 0)
@@ -84,5 +94,22 @@ public class Dagger : MonoBehaviour
     public bool isLanded()
     {
         return !in_air;
+    }
+
+    public float getWidth()
+    {
+        float w = 0;
+        BoxCollider2D box = GetComponent<BoxCollider2D>();
+        if(box)
+            w = box.size.x;
+        CapsuleCollider2D cap = GetComponent<CapsuleCollider2D>();
+        if (cap)
+            if (cap.size.y > w)
+                w = cap.size.y;
+        CircleCollider2D cir = GetComponent<CircleCollider2D>();
+        if (cir)
+            if (cir.radius*2 > w)
+                w = cap.size.y*2;
+        return w;
     }
 }
