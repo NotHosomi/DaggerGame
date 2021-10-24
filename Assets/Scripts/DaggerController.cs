@@ -8,12 +8,12 @@ public class DaggerController : MonoBehaviour
     {
         Tutorial,   // No blink, must be touched to be collected
         Default,    // Right click deletes the dagger
+        Heavy,      // Requires a charged up throw, for more puzzle/platform sections
         Gravity,    // M2 drops the dagger from it's stuck position. Collects if on ground.
         Homing,     // Returns in a straight line to player (or accelerates towards player?)
         Double,     // Two blinks, no return ability, need to quickswitch to abort.
         Grapple,    // No drop, M1down extends, M1up retracts, M2held pulls player IF landed
         DoubleGrapple, // Same as above. M1up pulls the player if landed. M1down whilst retracting releases. M1 mirrored for Dagger2 on M2
-        Heavy,      // Doesn't float in water
         //Time,     // Player can hold blink button to move blink pos back through the trajectory
         Lingering,  // Isn't deleted on dagger switch
         Length      // UTIL
@@ -29,8 +29,9 @@ public class DaggerController : MonoBehaviour
     [SerializeField] GameObject[] dagger_prefabs;
 
     GameObject[] dagger = { null, null, null };
-    Transform[] charge_bars = { null, null, null };
-    float[] charge = { 0, 0 };
+    // serves double purpose for cooldowns 
+    float[] cooldown = { 0, 0, 0 };
+    Transform[] cd_bars = { null, null, null };
 
     // hint line
     LineRenderer[] hint_lines = { null, null, null };
@@ -47,7 +48,7 @@ public class DaggerController : MonoBehaviour
         {
             if (child.tag == "PLAYER_bars")
             {
-                charge_bars[i] = child;
+                cd_bars[i] = child;
                 ++i;
             }
             if (child.tag == "PLAYER_arcs")
@@ -90,26 +91,26 @@ public class DaggerController : MonoBehaviour
         }
 
 
-
         switch (dagger_type)
         {
             case DaggerType.Default:
             case DaggerType.Gravity:
-            case DaggerType.Homing:
-            case DaggerType.Heavy:
+            case DaggerType.Homing: // make homing default?
                 ControlDefault();
+                break;
+            case DaggerType.Heavy:
+                ControlHeavy();
                 break;
             case DaggerType.Tutorial:
                 ControlTutorial();
                 break;
             case DaggerType.Double:
+                ControlDouble(1);
+                ControlDouble(2);
                 break;
             case DaggerType.Grapple:
-                break;
             case DaggerType.DoubleGrapple:
-                break;
             case DaggerType.Lingering:
-                break;
             default:
                 Debug.Log("Dagger behavior unlinked");
                 break;
@@ -118,8 +119,17 @@ public class DaggerController : MonoBehaviour
         for(int i = 0; i < (int)DaggerType.Length; ++i)
             if (Input.GetKeyDown((KeyCode)i + 48))
             {
-                dagger_type = (DaggerType)i;
-                Debug.Log("Dagger type: " + dagger_type);
+                switchDagger(i);
+            }
+
+        if (dagger_type != DaggerType.Heavy)
+            for(int i =0; i < 3; ++i)
+            {
+                cooldown[i] -= Time.deltaTime;
+                if (cooldown[i] < 0)
+                {
+                    cooldown[i] = 0;
+                }
             }
     }
 
@@ -128,25 +138,43 @@ public class DaggerController : MonoBehaviour
     {
         if (dagger[0] == null)
         {
-            if (Input.GetMouseButton(0))
-            {
-                chargeThrow();
-            }
-            if (Input.GetMouseButtonUp(0))
+            if (Input.GetMouseButtonDown(0))
             {
                 throwDagger();
+            }
+            if (Input.GetMouseButtonDown(1))
+            {
+                attack();
             }
         }
         else
         {
-            if (Input.GetMouseButtonUp(0))
+            if (Input.GetMouseButtonDown(0))
             {
                 blink();
             }
-            if (Input.GetMouseButtonUp(1))
+            if (Input.GetMouseButtonDown(1))
             {
                 dagger[0].GetComponent<Dagger>().alt();
             }
+        }
+    }
+
+    void ControlHeavy()
+    {
+        if (dagger[0] == null)
+        {
+            if (Input.GetMouseButton(0))
+                chargeThrow();
+            if (Input.GetMouseButtonUp(0))
+                throwDagger();
+        }
+        else
+        {
+            if (Input.GetMouseButtonUp(0))
+                blink();
+            if (Input.GetMouseButtonUp(1))
+                dagger[0].GetComponent<Dagger>().alt();
         }
     }
 
@@ -167,69 +195,88 @@ public class DaggerController : MonoBehaviour
     }
 
     // Dagger controls
-    void ControlDouble()
+    void ControlDouble(int id)
     {
-        if (dagger[1] == null)
+        if (dagger[id] == null)
         {
-            if (Input.GetMouseButton(0))
+            if (Input.GetMouseButton(id-1))
             {
-                chargeThrow(1);
+                chargeThrow(id);
             }
-            if (Input.GetMouseButtonUp(0))
+            if (Input.GetMouseButtonUp(id-1))
             {
-                throwDagger(1);
+                throwDagger(id);
             }
         }
         else
         {
-            if (Input.GetMouseButtonUp(0))
+            if (Input.GetMouseButtonUp(id-1))
             {
-                blink();
+                blink(id);
             }
         }
     }
 
-
-
-
-
-    void chargeThrow(int id = 0)
-    {
-        charge[id] += Time.deltaTime / dgr_charge_time;
-        charge[id] = Mathf.Min(charge[id], 1);
-
-        Vector3 s = charge_bars[id].localScale;
-        s.x = charge[id];
-        charge_bars[id].localScale = s;
-
-        Vector2 dir = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0)) - transform.position;
-        dir.Normalize();
-        renderArc(dir * dgr_charge_curve.Evaluate(charge[id]) * dgr_throw_coeff, id);
-
-    }
-
     void throwDagger(int id = 0)
     {
-        //if (charge < dgr_min_charge)
-        //    charge = dgr_min_charge;
         dagger[id] = Instantiate(fetchDaggerPrefab(id), transform.position, new Quaternion());
         Vector2 dir = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0)) - transform.position;
         dir.Normalize();
-        dagger[id].GetComponent<Rigidbody2D>().velocity = dir * dgr_charge_curve.Evaluate(charge[id]) * dgr_throw_coeff;
+        dagger[id].GetComponent<Rigidbody2D>().velocity = dir * dgr_throw_coeff;
+        if (dir.x < 0)
+            dagger[id].GetComponent<SpriteRenderer>().flipY = true;
+        dagger[id].GetComponent<Dagger>().owner = this;
+        dagger[id].GetComponent<Rigidbody2D>().gravityScale = dgr_weight;
+
+        // begin cooldown
+        cooldown[id] = 1;
+        Vector3 s = cd_bars[id].localScale;
+        s.x = cooldown[id];
+        cd_bars[id].localScale = s;
+        // wipe line renderer
+        hint_lines[id].enabled = false;
+    }
+    
+    void chargeThrow(int id = 0)
+    {
+        cooldown[id] += Time.deltaTime / dgr_charge_time;
+        cooldown[id] = Mathf.Min(cooldown[id], 1);
+
+        Vector3 s = cd_bars[id].localScale;
+        s.x = cooldown[id];
+        cd_bars[id].localScale = s;
+
+        Vector2 dir = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0)) - transform.position;
+        dir.Normalize();
+        renderArc(dir * dgr_charge_curve.Evaluate(cooldown[id]) * dgr_throw_coeff, id);
+    }
+    void throwHeavyDagger(int id = 0)
+    {
+        dagger[id] = Instantiate(fetchDaggerPrefab(id), transform.position, new Quaternion());
+        Vector2 dir = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0)) - transform.position;
+        dir.Normalize();
+        dagger[id].GetComponent<Rigidbody2D>().velocity = dir * dgr_charge_curve.Evaluate(cooldown[id]) * dgr_throw_coeff;
         if (dir.x < 0)
             dagger[id].GetComponent<SpriteRenderer>().flipY = true;
         dagger[id].GetComponent<Dagger>().owner = this;
         dagger[id].GetComponent<Rigidbody2D>().gravityScale = dgr_weight;
 
         // wipe charge
-        charge[id] = 0;
-        Vector3 s = charge_bars[id].localScale;
-        s.x = charge[id];
-        charge_bars[id].localScale = s;
+        cooldown[id] = 0;
+        Vector3 s = cd_bars[id].localScale;
+        s.x = cooldown[id];
+        cd_bars[id].localScale = s;
         // wipe line renderer
         hint_lines[id].enabled = false;
     }
 
+
+    void attack()
+    {
+
+    }
+
+    // UTILS
     GameObject fetchDaggerPrefab(int id)
     {
         switch(dagger_type)
@@ -241,6 +288,40 @@ public class DaggerController : MonoBehaviour
             default:
                 return dagger_prefabs[(int)dagger_type];
         }
+    }
+
+    void switchDagger(int type)
+    {
+        float cd = Mathf.Max(cooldown);
+        if (type == (int)DaggerType.Double || type == (int)DaggerType.DoubleGrapple)
+        {
+            cooldown[0] = 0;
+            cooldown[1] = cd;
+            cooldown[2] = cd;
+        }
+        else
+        {
+            cooldown[0] = cd;
+            cooldown[1] = 0;
+            cooldown[2] = 0;
+        }
+
+        if (type != (int)DaggerType.Lingering)
+        {
+            for (int id = 0; id < 3; ++type)
+                collectDagger(id);
+        }
+        // set CD bars
+        for (int id = 0; id < 3; ++id)
+        {
+            cooldown[id] = 0;
+            Vector3 s = cd_bars[id].localScale;
+            s.x = cooldown[id];
+            cd_bars[id].localScale = s;
+            hint_lines[id].enabled = false;
+        }
+        dagger_type = (DaggerType)type;
+        Debug.Log("Dagger type: " + dagger_type);
     }
 
     void renderArc(Vector2 vel, int id)
@@ -282,12 +363,13 @@ public class DaggerController : MonoBehaviour
 
     void blink(int d_id = 0)
     {
-        #region spatial_checks
+        Dagger dgr = dagger[d_id].GetComponent<Dagger>();
+        if (dgr.isReturning())
+            return;
+
         Vector3 hitnorm;
         Vector3 hitloc;
         Vector2 assumption = new Vector2();
-        Dagger dgr = dagger[d_id].GetComponent<Dagger>();
-        //List<Vector2> contacts = dgr.getHitPosList();
 
         if (dgr.isLanded())
         {
@@ -347,8 +429,6 @@ public class DaggerController : MonoBehaviour
         {
             dgr.fizzleDagger();
         }
-        #endregion
-
     }
 
     bool checkXSpace(ref Vector2 pos, Vector2 min_space)
@@ -440,5 +520,6 @@ public class DaggerController : MonoBehaviour
         }
         return true;
     }
+
 
 }

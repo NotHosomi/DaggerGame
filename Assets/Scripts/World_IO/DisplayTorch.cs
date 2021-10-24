@@ -24,7 +24,6 @@ public class DisplayTorch : ActionableGeneric
     int count = 0;
     void refresh()
     {
-        Debug.Log("Display refresh: " + count);
         if(count >= req_count)
         {
             SR.color = Color.green;

@@ -141,16 +141,17 @@ public class Player : MonoBehaviour
         cam_center.x = Mathf.SmoothDamp(cam_center.x, transform.position.x, ref cam_vel.x, 0.5f);
         cam_center.y = Mathf.SmoothDamp(cam_center.y, transform.position.y + cam_vert_const, ref cam_vel.y, 0.5f);
 
-        Vector2 offset = Input.mousePosition;
-        Vector2 screen_half;
-        screen_half.x = Screen.width / 2;
-        screen_half.y = Screen.height / 2;
-        offset = (offset - screen_half) / screen_half;
-
-        offset.x = cam_pull.Evaluate(Mathf.Abs(offset.x)) * Mathf.Sign(offset.x);
-        offset.y = cam_pull.Evaluate(Mathf.Abs(offset.y)) * Mathf.Sign(offset.y);
-        offset *= cam_offset_scale;
-        cam.position = cam_center + (Vector3)offset;
+        //Vector2 offset = Input.mousePosition;
+        //Vector2 screen_half;
+        //screen_half.x = Screen.width / 2;
+        //screen_half.y = Screen.height / 2;
+        //offset = (offset - screen_half) / screen_half;
+        //
+        //offset.x = cam_pull.Evaluate(Mathf.Abs(offset.x)) * Mathf.Sign(offset.x);
+        //offset.y = cam_pull.Evaluate(Mathf.Abs(offset.y)) * Mathf.Sign(offset.y);
+        //offset *= cam_offset_scale;
+        //cam.position = cam_center + (Vector3)offset;
+        cam.position = cam_center;
 
         //Vector3 pos = cam.position;
         //pos.x = Mathf.SmoothDamp(pos.x, transform.position.x, ref cam_vel.x, 0.5f);
@@ -174,3 +175,9 @@ public class Player : MonoBehaviour
         respawn_pos = pos;
     }
 }
+
+// Idea:
+// keydown when in air
+// player speed massively reduced
+// 5 quick attacks
+// then speed returns

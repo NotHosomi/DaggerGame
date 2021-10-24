@@ -157,7 +157,7 @@ MonoBehaviour:
   LM:
     serializedVersion: 2
     m_Bits: 1
-  dgr_throw_coeff: 20
+  dgr_throw_coeff: 40
   dgr_weight: 2.5
   dgr_charge_time: 1
   dgr_min_charge: 1.5

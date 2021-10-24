@@ -158,6 +158,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dgr_fizzle: {fileID: 7797619781439036980, guid: b4d32da6df94b684a9214c0117f1f735, type: 3}
+  return_speed: 20
+  return_start_speed: 10
+  return_jolt: 0
   owner: {fileID: 0}
 --- !u!50 &-862743194978742293
 Rigidbody2D:
