@@ -324,6 +324,8 @@ public class DaggerController : MonoBehaviour
         Debug.Log("Dagger type: " + dagger_type);
     }
 
+
+
     void renderArc(Vector2 vel, int id)
     {
         Vector3[] arc = new Vector3[hint_r_limit];
@@ -520,6 +522,4 @@ public class DaggerController : MonoBehaviour
         }
         return true;
     }
-
-
 }
