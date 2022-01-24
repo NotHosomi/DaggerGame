@@ -4,21 +4,14 @@ using UnityEngine;
 
 public class DaggerController : MonoBehaviour
 {
-    enum DaggerType
+    [System.Flags]
+    enum Upgrades
     {
-        Tutorial,   // No blink, must be touched to be collected
-        Default,    // Right click deletes the dagger
-        Heavy,      // Requires a charged up throw, for more puzzle/platform sections
-        Gravity,    // M2 drops the dagger from it's stuck position. Collects if on ground.
-        Homing,     // Returns in a straight line to player (or accelerates towards player?)
-        Double,     // Two blinks, no return ability, need to quickswitch to abort.
-        Grapple,    // No drop, M1down extends, M1up retracts, M2held pulls player IF landed
-        DoubleGrapple, // Same as above. M1up pulls the player if landed. M1down whilst retracting releases. M1 mirrored for Dagger2 on M2
-        //Time,     // Player can hold blink button to move blink pos back through the trajectory
-        Lingering,  // Isn't deleted on dagger switch
-        Length      // UTIL
+        Default = 1,
+        Heavy = 1 << 1,
+        Homing = 1 << 2
     };
-    DaggerType dagger_type = DaggerType.Default;
+    [SerializeField] Upgrades upgrades; // Dagger upgrades specifically. Does not count
 
     [SerializeField] LayerMask LM;
     [SerializeField] float dgr_throw_coeff;
@@ -28,35 +21,41 @@ public class DaggerController : MonoBehaviour
     [SerializeField] AnimationCurve dgr_charge_curve;
     [SerializeField] GameObject[] dagger_prefabs;
 
-    GameObject[] dagger = { null, null, null };
-    // serves double purpose for cooldowns 
-    float[] cooldown = { 0, 0, 0 };
-    Transform[] cd_bars = { null, null, null };
+    [SerializeField] int max_daggers; // for now lets just say it maxes out at 3 (+1 for the heavy)
+
+
+    List<GameObject> dagger = new List<GameObject>();
+    GameObject heavy_dagger = null;
+    float cooldown = 0;
+    [SerializeField] float DGR_COOLDOWN;
+    float blink_cd = 0;
+    [SerializeField] float BLINK_COOLDOWN;
+    [SerializeField] float BLINK_INHERIT_VELOCITY_MULT;
+
+
+    float charge = 0;
+    Transform charge_bar = null;
 
     // hint line
-    LineRenderer[] hint_lines = { null, null, null };
+    LineRenderer hint_line = null;
     int hint_r_limit = 20;
     float hint_timescale = 0.1f;
     float hint_rescale = 0.515f; // approximate gravity alignment correction. No fuckin clue why tho
 
     private void Awake()
     {
-        int i = 0;
-        int j = 0;
         LineRenderer LR;
         foreach (Transform child in transform)
         {
             if (child.tag == "PLAYER_bars")
             {
-                cd_bars[i] = child;
-                ++i;
+                charge_bar = child;
             }
-            if (child.tag == "PLAYER_arcs")
+            else if (child.tag == "PLAYER_arcs")
             {
                 if (LR = child.GetComponent<LineRenderer>())
                 {
-                    hint_lines[j] = LR;
-                    ++j;
+                    hint_line = LR;
                 }
                 else
                 {
@@ -90,243 +89,123 @@ public class DaggerController : MonoBehaviour
             Debug.Log(hint_rescale);
         }
 
-
-        switch (dagger_type)
+        ControlDefault();
+        ControlHeavy();
+        GameObject nearest = findBlinkTarget();
+        if(nearest != null)
         {
-            case DaggerType.Default:
-            case DaggerType.Gravity:
-            case DaggerType.Homing: // make homing default?
-                ControlDefault();
-                break;
-            case DaggerType.Heavy:
-                ControlHeavy();
-                break;
-            case DaggerType.Tutorial:
-                ControlTutorial();
-                break;
-            case DaggerType.Double:
-                ControlDouble(1);
-                ControlDouble(2);
-                break;
-            case DaggerType.Grapple:
-            case DaggerType.DoubleGrapple:
-            case DaggerType.Lingering:
-            default:
-                Debug.Log("Dagger behavior unlinked");
-                break;
+            foreach(GameObject d in dagger)
+            {
+                if (d != nearest)
+                    d.GetComponent<Animator>().SetBool("Nearest", false);
+            }
+            if(heavy_dagger != null && heavy_dagger != nearest)
+                heavy_dagger.GetComponent<Animator>().SetBool("Nearest", false);
+            nearest.GetComponent<Animator>().SetBool("Nearest", true);
+
+            if (Input.GetMouseButtonDown(1) && blink_cd <= 0)
+            {
+                blink(nearest.GetComponent<Dagger>());
+            }
         }
 
-        for(int i = 0; i < (int)DaggerType.Length; ++i)
-            if (Input.GetKeyDown((KeyCode)i + 48))
-            {
-                switchDagger(i);
-            }
-
-        if (dagger_type != DaggerType.Heavy)
-            for(int i =0; i < 3; ++i)
-            {
-                cooldown[i] -= Time.deltaTime;
-                if (cooldown[i] < 0)
-                {
-                    cooldown[i] = 0;
-                }
-            }
+        if (blink_cd > 0)
+            blink_cd -= Time.deltaTime;
+        if (cooldown > 0)
+            cooldown -= Time.deltaTime;
     }
 
     // Dagger controls
     void ControlDefault()
     {
-        if (dagger[0] == null)
+        if ((upgrades & Upgrades.Default) == 0)
+            return;
+
+        if (Input.GetMouseButtonDown(0) && cooldown <= 0 && charge <= 0)
         {
-            if (Input.GetMouseButtonDown(0))
+            if (dagger.Count == max_daggers)
             {
-                throwDagger();
+                collectDagger(0);
             }
-            if (Input.GetMouseButtonDown(1))
-            {
-                attack();
-            }
-        }
-        else
-        {
-            if (Input.GetMouseButtonDown(0))
-            {
-                blink();
-            }
-            if (Input.GetMouseButtonDown(1))
-            {
-                dagger[0].GetComponent<Dagger>().alt();
-            }
+            throwDagger();
         }
     }
 
     void ControlHeavy()
     {
-        if (dagger[0] == null)
+        if ((upgrades & Upgrades.Heavy) == 0)
+            return;
+
+        if (heavy_dagger == null)
         {
-            if (Input.GetMouseButton(0))
+            if (Input.GetKey(KeyCode.Q))
                 chargeThrow();
-            if (Input.GetMouseButtonUp(0))
-                throwDagger();
+            if (Input.GetKeyUp(KeyCode.Q))
+                throwHeavyDagger();
         }
         else
         {
-            if (Input.GetMouseButtonUp(0))
-                blink();
-            if (Input.GetMouseButtonUp(1))
-                dagger[0].GetComponent<Dagger>().alt();
+            if (Input.GetKeyDown(KeyCode.Q))
+                if ((upgrades & Upgrades.Homing) != 0)
+                    heavy_dagger.GetComponent<Dagger>().recall();
+                else
+                    heavy_dagger.GetComponent<Dagger>().fizzleDagger();
         }
     }
 
-    // Dagger controls
-    void ControlTutorial()
+    void throwDagger()
     {
-        if (dagger[0] == null)
-        {
-            if (Input.GetMouseButton(0))
-            {
-                chargeThrow();
-            }
-            if (Input.GetMouseButtonUp(0))
-            {
-                throwDagger();
-            }
-        }
-    }
-
-    // Dagger controls
-    void ControlDouble(int id)
-    {
-        if (dagger[id] == null)
-        {
-            if (Input.GetMouseButton(id-1))
-            {
-                chargeThrow(id);
-            }
-            if (Input.GetMouseButtonUp(id-1))
-            {
-                throwDagger(id);
-            }
-        }
-        else
-        {
-            if (Input.GetMouseButtonUp(id-1))
-            {
-                blink(id);
-            }
-        }
-    }
-
-    void throwDagger(int id = 0)
-    {
-        dagger[id] = Instantiate(fetchDaggerPrefab(id), transform.position, new Quaternion());
+        GameObject dgr = Instantiate(dagger_prefabs[0], transform.position, new Quaternion());
         Vector2 dir = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0)) - transform.position;
         dir.Normalize();
-        dagger[id].GetComponent<Rigidbody2D>().velocity = dir * dgr_throw_coeff;
+        dgr.GetComponent<Rigidbody2D>().velocity = dir * dgr_throw_coeff;
         if (dir.x < 0)
-            dagger[id].GetComponent<SpriteRenderer>().flipY = true;
-        dagger[id].GetComponent<Dagger>().owner = this;
-        dagger[id].GetComponent<Rigidbody2D>().gravityScale = dgr_weight;
-
+            dgr.GetComponent<SpriteRenderer>().flipY = true;
+        dgr.GetComponent<Dagger>().owner = this;
+        dgr.GetComponent<Rigidbody2D>().gravityScale = dgr_weight;
+        dagger.Add(dgr);
         // begin cooldown
-        cooldown[id] = 1;
-        Vector3 s = cd_bars[id].localScale;
-        s.x = cooldown[id];
-        cd_bars[id].localScale = s;
-        // wipe line renderer
-        hint_lines[id].enabled = false;
+        cooldown = DGR_COOLDOWN;
     }
-    
-    void chargeThrow(int id = 0)
-    {
-        cooldown[id] += Time.deltaTime / dgr_charge_time;
-        cooldown[id] = Mathf.Min(cooldown[id], 1);
 
-        Vector3 s = cd_bars[id].localScale;
-        s.x = cooldown[id];
-        cd_bars[id].localScale = s;
+    void chargeThrow()
+    {
+        charge += Time.deltaTime / dgr_charge_time;
+        charge = Mathf.Min(charge, 1);
+        Debug.Log("Charging: " + charge);
+
+        Vector3 s = charge_bar.localScale;
+        s.x = charge;
+        charge_bar.localScale = s;
 
         Vector2 dir = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0)) - transform.position;
         dir.Normalize();
-        renderArc(dir * dgr_charge_curve.Evaluate(cooldown[id]) * dgr_throw_coeff, id);
+        renderArc(dir * dgr_charge_curve.Evaluate(charge) * dgr_throw_coeff);
     }
-    void throwHeavyDagger(int id = 0)
+    void throwHeavyDagger()
     {
-        dagger[id] = Instantiate(fetchDaggerPrefab(id), transform.position, new Quaternion());
+        Debug.Log("Charge: " + charge);
+        // TODO: if homing dagger, spawn homing dagger prefab instead
+        heavy_dagger = Instantiate(dagger_prefabs[1], transform.position, new Quaternion());
         Vector2 dir = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0)) - transform.position;
         dir.Normalize();
-        dagger[id].GetComponent<Rigidbody2D>().velocity = dir * dgr_charge_curve.Evaluate(cooldown[id]) * dgr_throw_coeff;
+        heavy_dagger.GetComponent<Rigidbody2D>().velocity = dir * dgr_charge_curve.Evaluate(charge) * dgr_throw_coeff;
         if (dir.x < 0)
-            dagger[id].GetComponent<SpriteRenderer>().flipY = true;
-        dagger[id].GetComponent<Dagger>().owner = this;
-        dagger[id].GetComponent<Rigidbody2D>().gravityScale = dgr_weight;
+            heavy_dagger.GetComponent<SpriteRenderer>().flipY = true;
+        heavy_dagger.GetComponent<Dagger>().owner = this;
+        heavy_dagger.GetComponent<Rigidbody2D>().gravityScale = dgr_weight;
 
         // wipe charge
-        cooldown[id] = 0;
-        Vector3 s = cd_bars[id].localScale;
-        s.x = cooldown[id];
-        cd_bars[id].localScale = s;
+        charge = 0;
+        Vector3 s = charge_bar.localScale;
+        s.x = charge;
+        charge_bar.localScale = s;
         // wipe line renderer
-        hint_lines[id].enabled = false;
-    }
-
-
-    void attack()
-    {
-
+        hint_line.enabled = false;
     }
 
     // UTILS
-    GameObject fetchDaggerPrefab(int id)
-    {
-        switch(dagger_type)
-        {
-            case DaggerType.Double:
-                return dagger_prefabs[(int)DaggerType.Length];
-            case DaggerType.DoubleGrapple:
-                return dagger_prefabs[(int)DaggerType.Length + 1];
-            default:
-                return dagger_prefabs[(int)dagger_type];
-        }
-    }
-
-    void switchDagger(int type)
-    {
-        float cd = Mathf.Max(cooldown);
-        if (type == (int)DaggerType.Double || type == (int)DaggerType.DoubleGrapple)
-        {
-            cooldown[0] = 0;
-            cooldown[1] = cd;
-            cooldown[2] = cd;
-        }
-        else
-        {
-            cooldown[0] = cd;
-            cooldown[1] = 0;
-            cooldown[2] = 0;
-        }
-
-        if (type != (int)DaggerType.Lingering)
-        {
-            for (int id = 0; id < 3; ++type)
-                collectDagger(id);
-        }
-        // set CD bars
-        for (int id = 0; id < 3; ++id)
-        {
-            cooldown[id] = 0;
-            Vector3 s = cd_bars[id].localScale;
-            s.x = cooldown[id];
-            cd_bars[id].localScale = s;
-            hint_lines[id].enabled = false;
-        }
-        dagger_type = (DaggerType)type;
-        Debug.Log("Dagger type: " + dagger_type);
-    }
-
-
-
-    void renderArc(Vector2 vel, int id)
+    void renderArc(Vector2 vel)
     {
         Vector3[] arc = new Vector3[hint_r_limit];
         arc[0] = transform.position;
@@ -346,27 +225,36 @@ public class DaggerController : MonoBehaviour
             }
         }
 
-        hint_lines[id].enabled = true;
-        hint_lines[id].positionCount = arc.Length;
-        hint_lines[id].SetPositions(arc);
-        hint_lines[id].positionCount = (t < arc.Length) ? t + 1 : arc.Length;
+        hint_line.enabled = true;
+        hint_line.positionCount = arc.Length;
+        hint_line.SetPositions(arc);
+        hint_line.positionCount = (t < arc.Length) ? t + 1 : arc.Length;
+        // todo, set width in editor to 0.3, 0
     }
 
-    public void forgetDagger(int id = 0)
+    public void forgetDagger(int id)
     {
-        dagger[id] = null;
+        dagger.RemoveAt(id);
+    }
+    public void forgetDagger(GameObject dgr)
+    {
+        dagger.Remove(dgr);
     }
 
-    public void collectDagger(int id = 0)
+    public void collectDagger(int id)
     {
         Destroy(dagger[id]);
-        dagger[id] = null;
+        dagger.RemoveAt(id);
+    }
+    public void collectDagger(GameObject dgr)
+    {
+        dagger.Remove(dgr);
+        Destroy(dgr);
     }
 
-    void blink(int d_id = 0)
+    void blink(Dagger dgr)
     {
-        Dagger dgr = dagger[d_id].GetComponent<Dagger>();
-        if (dgr.isReturning())
+        if (blink_cd > 0)
             return;
 
         Vector3 hitnorm;
@@ -392,7 +280,7 @@ public class DaggerController : MonoBehaviour
         hitnorm.y /= 2;
         hitnorm.Normalize();
         Vector2 min_space = new Vector2(0.9f, 2f);
-        bool clear = false;
+        bool clear;
         if (Mathf.Abs(hitnorm.y) < Mathf.Abs(hitnorm.x))
         {
             pos.x += assumption.x;
@@ -410,10 +298,10 @@ public class DaggerController : MonoBehaviour
         {
             pos.y += assumption.y;
             clear = checkXSpace(ref pos, min_space);
-            if(!clear)
+            if (!clear)
             {
                 clear = checkYSpace(ref pos, min_space);
-                if(clear)
+                if (clear)
                 {
                     clear = checkXSpace(ref pos, min_space);
                 }
@@ -424,13 +312,11 @@ public class DaggerController : MonoBehaviour
         if (clear)
         {
             transform.position = pos;
-            GetComponent<Rigidbody2D>().velocity = dgr.GetComponent<Rigidbody2D>().velocity;
-            collectDagger();
+            GetComponent<Rigidbody2D>().velocity += dgr.GetComponent<Rigidbody2D>().velocity * BLINK_INHERIT_VELOCITY_MULT;
+            collectDagger(dgr.gameObject);
         }
-        else
-        {
-            dgr.fizzleDagger();
-        }
+        blink_cd = BLINK_COOLDOWN;
+        cooldown = DGR_COOLDOWN;
     }
 
     bool checkXSpace(ref Vector2 pos, Vector2 min_space)
@@ -521,5 +407,30 @@ public class DaggerController : MonoBehaviour
             pos.y += dist;
         }
         return true;
+    }
+
+    GameObject findBlinkTarget()
+    {
+        GameObject dgr = null;
+        float lowest_diff = 1000000000000;
+        Vector2 m_worldpos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        if (dagger.Count != 0)
+        {
+            float diff;
+            foreach (GameObject d in dagger)
+            {
+                diff = (m_worldpos - (Vector2)d.transform.position).sqrMagnitude;
+                if (lowest_diff > diff)
+                {
+                    lowest_diff = diff;
+                    dgr = d;
+                }
+            }
+        }
+        // and check the heavy dagger
+        if(heavy_dagger != null && !heavy_dagger.GetComponent<Dagger>().isReturning()
+                && lowest_diff > (m_worldpos - (Vector2)heavy_dagger.transform.position).sqrMagnitude)
+            return heavy_dagger;
+        return dgr;
     }
 }

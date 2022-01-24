@@ -95,7 +95,6 @@ public class Player : MonoBehaviour
 
         if (wish_jump && grounded)
         {
-            Debug.Log("Successful jump");
             vel.y = mv_jumpforce;
         }
 
