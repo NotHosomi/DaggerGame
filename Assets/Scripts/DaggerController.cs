@@ -18,6 +18,8 @@ public class DaggerController : MonoBehaviour
     [SerializeField] float dgr_weight;
     [SerializeField] float dgr_charge_time;
     [SerializeField] float dgr_min_charge;
+    [SerializeField] float dgr_charge_scale;
+    [SerializeField] float dgr_cursor_radius;
     [SerializeField] AnimationCurve dgr_charge_curve;
     [SerializeField] GameObject[] dagger_prefabs;
 
@@ -102,11 +104,19 @@ public class DaggerController : MonoBehaviour
             if(heavy_dagger != null && heavy_dagger != nearest)
                 heavy_dagger.GetComponent<Animator>().SetBool("Nearest", false);
             nearest.GetComponent<Animator>().SetBool("Nearest", true);
-
             if (Input.GetMouseButtonDown(1) && blink_cd <= 0)
             {
                 blink(nearest.GetComponent<Dagger>());
             }
+        }
+        else
+        {
+            foreach (GameObject d in dagger)
+            {
+                d.GetComponent<Animator>().SetBool("Nearest", false);
+            }
+            if (heavy_dagger != null)
+                heavy_dagger.GetComponent<Animator>().SetBool("Nearest", false);
         }
 
         if (blink_cd > 0)
@@ -170,8 +180,11 @@ public class DaggerController : MonoBehaviour
 
     void chargeThrow()
     {
-        charge += Time.deltaTime / dgr_charge_time;
-        charge = Mathf.Min(charge, 1);
+        float mdist = ((Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition) - (Vector2)transform.position).magnitude; // could use SqrMag
+        charge = mdist / dgr_charge_scale;
+        // change this to be proportional from player
+        //charge += Time.deltaTime / dgr_charge_time;
+        //charge = Mathf.Min(charge, 1);
         Debug.Log("Charging: " + charge);
 
         Vector3 s = charge_bar.localScale;
@@ -409,17 +422,18 @@ public class DaggerController : MonoBehaviour
         return true;
     }
 
+    // This doesn't seem to scale correctly with the parameter properly, but whatever
     GameObject findBlinkTarget()
     {
         GameObject dgr = null;
-        float lowest_diff = 1000000000000;
-        Vector2 m_worldpos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        float lowest_diff = dgr_cursor_radius;
+        Vector2 cursorpos = Input.mousePosition; 
+        float diff;
         if (dagger.Count != 0)
         {
-            float diff;
             foreach (GameObject d in dagger)
             {
-                diff = (m_worldpos - (Vector2)d.transform.position).sqrMagnitude;
+                diff = ((cursorpos - (Vector2)Camera.main.WorldToScreenPoint(d.transform.position)) / Screen.height).sqrMagnitude;
                 if (lowest_diff > diff)
                 {
                     lowest_diff = diff;
@@ -428,8 +442,8 @@ public class DaggerController : MonoBehaviour
             }
         }
         // and check the heavy dagger
-        if(heavy_dagger != null && !heavy_dagger.GetComponent<Dagger>().isReturning()
-                && lowest_diff > (m_worldpos - (Vector2)heavy_dagger.transform.position).sqrMagnitude)
+        if (heavy_dagger != null && !heavy_dagger.GetComponent<Dagger>().isReturning() 
+                && lowest_diff > ((cursorpos - (Vector2)Camera.main.WorldToScreenPoint(heavy_dagger.transform.position)) / Screen.height).sqrMagnitude)
             return heavy_dagger;
         return dgr;
     }

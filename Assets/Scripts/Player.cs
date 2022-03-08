@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -19,6 +20,7 @@ public class Player : MonoBehaviour
     [SerializeField] float mv_airaccel;
     [SerializeField] float mv_friction;
     [SerializeField] float mv_gravity;
+    [SerializeField] float mv_maxfall;
     [SerializeField] float mv_jumpforce;
     [SerializeField] float cam_speed;
     Vector2 respawn_pos;
@@ -43,7 +45,6 @@ public class Player : MonoBehaviour
     */
     private void FixedUpdate()
     {
-        checkGrounded();
         move();
     }
 
@@ -52,6 +53,8 @@ public class Player : MonoBehaviour
         camMove();
     }
 
+    // Old movement, slippery
+    /*
     void move()
     {
         applyGravity();
@@ -78,7 +81,7 @@ public class Player : MonoBehaviour
         Vector2 vel = rb.velocity;
 
         // ignore player input if they're over max speed
-        if (Mathf.Abs(vel.x) < mv_speed && wish_dir != 0)
+            if (Mathf.Abs(vel.x) < mv_speed && wish_dir != 0)
         {
             float accel = wish_dir * (grounded ? mv_accel : mv_airaccel) * Time.fixedDeltaTime;
             vel.x += accel;
@@ -100,19 +103,76 @@ public class Player : MonoBehaviour
 
         rb.velocity = vel;
     }
+    */
 
+    void move()
+    {
+        checkGrounded();
+        applyGravity();
+        if (!has_control)
+        {
+            return;
+        }
+
+        float wish_dir = 0;
+        bool wish_jump = false;
+        if (Input.GetKey(KeyCode.Space)) // this is to be updated
+        {
+            wish_jump = true;
+        }
+        if (Input.GetKey(KeyCode.A))
+        {
+            --wish_dir;
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            ++wish_dir;
+        }
+
+        Vector2 vel = rb.velocity;
+
+
+        if (Mathf.Abs(vel.x) <= mv_speed + 0.01f) // less than max speed? (Epsilon accounts for floating point err)
+            vel.x = wish_dir * mv_speed;
+        else if (grounded)
+            vel.x *= 0.9f;
+        else if (Mathf.Sign(vel.x) != Math.Sign(wish_dir))
+            vel.x *= 0.99f;
+        //    vel.x -= Mathf.Log(Mathf.Abs(vel.x))/vel.x;   //Debug.Log("TODO: air friction");
+        // air movement feels jank sometimes :\
+
+
+        if (wish_jump && grounded) // this is to be updated
+        {
+            vel.y = mv_jumpforce;
+        }
+
+        rb.velocity = vel;
+    }
     void checkGrounded()
     {
-        grounded = Physics2D.OverlapBox(transform.position + Vector3.down, new Vector2(0.79f, 0.1f), 0, LM);
+        grounded = Physics2D.OverlapBox(transform.position + Vector3.down, new Vector2(0.78f, 0.1f), 0, LM);
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(transform.position + Vector3.down, new Vector3(0.78f, 0.1f, 1));
     }
 
     void applyGravity()
     {
         Vector2 vel = rb.velocity;
-        vel.y -= mv_gravity * grav_coeff;
+        if (vel.y > mv_maxfall)
+            vel.y -= mv_gravity * grav_coeff;
+        else if (!grounded)
+            vel.y = mv_maxfall;
+        else 
+            vel.y = 0;
         rb.velocity = vel;
     }
 
+    // Why isn't this working ;w;
     void applyFriction()
     {
         Vector2 vel = rb.velocity;
@@ -132,13 +192,15 @@ public class Player : MonoBehaviour
         newspeed /= Mathf.Abs(vel.x);
 
         vel.x = vel.x * newspeed;
+        Debug.Log(newspeed);
         rb.velocity = vel;
     }
 
     void camMove()
     {
-        cam_center.x = Mathf.SmoothDamp(cam_center.x, transform.position.x, ref cam_vel.x, 0.5f);
-        cam_center.y = Mathf.SmoothDamp(cam_center.y, transform.position.y + cam_vert_const, ref cam_vel.y, 0.5f);
+        cam_center.x = Mathf.SmoothDamp(cam_center.x, transform.position.x, ref cam_vel.x, 0.25f);                  // HK cam DOES NOT smoothstep
+        cam_center.y = Mathf.SmoothDamp(cam_center.y, transform.position.y + cam_vert_const, ref cam_vel.y, 0.25f); // It is locked to a point just ahead of the player.
+                                                                                                                    // could smoothstep this targetpoint only after a blink
 
         //Vector2 offset = Input.mousePosition;
         //Vector2 screen_half;

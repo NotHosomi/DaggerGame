@@ -134,8 +134,9 @@ MonoBehaviour:
   mv_speed: 7
   mv_accel: 100
   mv_airaccel: 80
-  mv_friction: 200
+  mv_friction: 100
   mv_gravity: 1
+  mv_maxfall: -20
   mv_jumpforce: 15
   cam_speed: 0.2
   grav_coeff: 1
@@ -160,6 +161,8 @@ MonoBehaviour:
   dgr_weight: 2.5
   dgr_charge_time: 1
   dgr_min_charge: 1.5
+  dgr_charge_scale: 20
+  dgr_cursor_radius: 0.5
   dgr_charge_curve:
     serializedVersion: 2
     m_Curve:
@@ -207,7 +210,7 @@ Rigidbody2D:
   m_LinearDrag: 0
   m_AngularDrag: 1
   m_GravityScale: 0
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 375260f99b322a849b7d7c9c257dc441, type: 2}
   m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
