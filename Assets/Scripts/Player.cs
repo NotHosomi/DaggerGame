@@ -7,6 +7,7 @@ public class Player : MonoBehaviour
 {
     [SerializeField] LayerMask LM;
 
+    // Camera
     [SerializeField] AnimationCurve cam_pull;
     [SerializeField] float cam_offset_scale;
     Transform cam;
@@ -14,21 +15,30 @@ public class Player : MonoBehaviour
     Vector2 cam_vel = new Vector2();
     [SerializeField] float cam_vert_const;
 
+    // Movement
     Rigidbody2D rb;
     [SerializeField] float mv_speed;
     [SerializeField] float mv_accel;
     [SerializeField] float mv_airaccel;
     [SerializeField] float mv_friction;
     [SerializeField] float mv_gravity;
+    [SerializeField] float mv_hi_jump_grav;
+    [SerializeField] float mv_lo_jump_grav;
     [SerializeField] float mv_maxfall;
     [SerializeField] float mv_jumpforce;
     [SerializeField] float cam_speed;
+    public bool jumping = false;
     Vector2 respawn_pos;
 
     bool has_control = true;
     public float grav_coeff = 1;
 
     [SerializeField] bool grounded;
+
+    // HP
+    [SerializeField] SpriteRenderer[] hp_icons;
+    [SerializeField] int max_hp;
+    int hp;
 
     private void Awake()
     {
@@ -38,6 +48,7 @@ public class Player : MonoBehaviour
         cam_center = transform.position;
         cam_center.z = cam.position.z;
         cam.position = cam_center;
+        hp = max_hp;
     }
     
     /*
@@ -144,7 +155,12 @@ public class Player : MonoBehaviour
 
         if (wish_jump && grounded) // this is to be updated
         {
+            jumping = true;
             vel.y = mv_jumpforce;
+        }
+        if(!(wish_jump || grounded))
+        {
+            jumping = false;
         }
 
         rb.velocity = vel;
@@ -154,21 +170,33 @@ public class Player : MonoBehaviour
         grounded = Physics2D.OverlapBox(transform.position + Vector3.down, new Vector2(0.78f, 0.1f), 0, LM);
     }
 
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(transform.position + Vector3.down, new Vector3(0.78f, 0.1f, 1));
-    }
-
     void applyGravity()
-    {
+    {// no delta time used, this is in FixedUpdate
         Vector2 vel = rb.velocity;
-        if (vel.y > mv_maxfall)
-            vel.y -= mv_gravity * grav_coeff;
-        else if (!grounded)
-            vel.y = mv_maxfall;
-        else 
+        if(grounded)
+        {
             vel.y = 0;
+            rb.velocity = vel;
+            return;
+        }
+
+        if (vel.y > mv_maxfall)
+        {
+            if (vel.y > 0) // standard falling
+            {
+                if(jumping)
+                    //vel.y -= mv_gravity * mv_hi_jumpgrav_mult * grav_coeff;
+                    vel.y -= mv_hi_jump_grav * grav_coeff;
+                else
+                    //vel.y -= mv_gravity * mv_lo_jumpgrav_mult * grav_coeff;
+                    vel.y -= mv_lo_jump_grav * grav_coeff;
+            }
+            else
+                vel.y -= mv_gravity * grav_coeff;
+        }
+        else// if (!grounded)
+            vel.y = mv_maxfall;
+        //else 
         rb.velocity = vel;
     }
 
@@ -194,6 +222,12 @@ public class Player : MonoBehaviour
         vel.x = vel.x * newspeed;
         Debug.Log(newspeed);
         rb.velocity = vel;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(transform.position + Vector3.down, new Vector3(0.78f, 0.1f, 1));
     }
 
     void camMove()

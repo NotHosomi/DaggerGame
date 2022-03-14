@@ -327,6 +327,7 @@ public class DaggerController : MonoBehaviour
             transform.position = pos;
             GetComponent<Rigidbody2D>().velocity += dgr.GetComponent<Rigidbody2D>().velocity * BLINK_INHERIT_VELOCITY_MULT;
             collectDagger(dgr.gameObject);
+            GetComponent<Player>().jumping = false;
         }
         blink_cd = BLINK_COOLDOWN;
         cooldown = DGR_COOLDOWN;
