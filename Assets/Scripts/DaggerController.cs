@@ -197,7 +197,7 @@ public class DaggerController : MonoBehaviour
     }
     void throwHeavyDagger()
     {
-        Debug.Log("Charge: " + charge);
+        //Debug.Log("Charge: " + charge);
         // TODO: if homing dagger, spawn homing dagger prefab instead
         heavy_dagger = Instantiate(dagger_prefabs[1], transform.position, new Quaternion());
         Vector2 dir = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0)) - transform.position;
