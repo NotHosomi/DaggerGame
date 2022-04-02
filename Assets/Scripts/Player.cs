@@ -320,7 +320,7 @@ public class Player : MonoBehaviour
         respawn_pos = pos;
     }
 
-    public void onBlink(Vector2 travelled)
+    public void onBlink(Vector3 travelled)
     {
         cam_disjoint -= travelled;
     }

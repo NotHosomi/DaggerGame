@@ -38587,7 +38587,7 @@ GameObject:
   - component: {fileID: 1562032041}
   - component: {fileID: 1562032040}
   - component: {fileID: 1562032039}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: NoDagger
   m_TagString: Untagged
   m_Icon: {fileID: 0}
