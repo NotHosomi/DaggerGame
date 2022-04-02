@@ -137,9 +137,9 @@ MonoBehaviour:
   mv_friction: 100
   mv_gravity: 2.5
   mv_hi_jump_grav: 1
-  mv_lo_jump_grav: 2
+  mv_lo_jump_grav: 4
   mv_maxfall: -20
-  mv_jumpforce: 15
+  mv_jumpforce: 20
   cam_speed: 0.2
   jumping: 0
   grav_coeff: 1

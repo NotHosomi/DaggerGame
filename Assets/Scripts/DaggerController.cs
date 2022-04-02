@@ -43,6 +43,7 @@ public class DaggerController : MonoBehaviour
     int hint_r_limit = 20;
     float hint_timescale = 0.1f;
     float hint_rescale = 0.515f; // approximate gravity alignment correction. No fuckin clue why tho
+    Player player;
 
     private void Awake()
     {
@@ -65,6 +66,7 @@ public class DaggerController : MonoBehaviour
                 }
             }
         }
+        player = gameObject.GetComponent<Player>();
     }
 
     // Update is called once per frame
@@ -185,7 +187,7 @@ public class DaggerController : MonoBehaviour
         // change this to be proportional from player
         //charge += Time.deltaTime / dgr_charge_time;
         //charge = Mathf.Min(charge, 1);
-        Debug.Log("Charging: " + charge);
+        //Debug.Log("Charging: " + charge);
 
         Vector3 s = charge_bar.localScale;
         s.x = charge;
@@ -324,13 +326,16 @@ public class DaggerController : MonoBehaviour
 
         if (clear)
         {
+            blink_cd = BLINK_COOLDOWN;
+            cooldown = DGR_COOLDOWN;
+            Vector2 travelled = pos - (Vector2)transform.position; 
             transform.position = pos;
             GetComponent<Rigidbody2D>().velocity += dgr.GetComponent<Rigidbody2D>().velocity * BLINK_INHERIT_VELOCITY_MULT;
             collectDagger(dgr.gameObject);
             GetComponent<Player>().jumping = false;
+
+            player.onBlink(travelled);
         }
-        blink_cd = BLINK_COOLDOWN;
-        cooldown = DGR_COOLDOWN;
     }
 
     bool checkXSpace(ref Vector2 pos, Vector2 min_space)

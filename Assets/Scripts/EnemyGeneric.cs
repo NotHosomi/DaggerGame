@@ -38,6 +38,8 @@ public class EnemyGeneric : MonoBehaviour
     {
         if (!seeker.IsDone())
             return;
+        if (target == null)
+            return;
 
         Vector2 t = home_pos;
 

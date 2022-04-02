@@ -8,25 +8,26 @@ public class Player : MonoBehaviour
     [SerializeField] LayerMask LM;
 
     // Camera
-    [SerializeField] AnimationCurve cam_pull;
-    [SerializeField] float cam_offset_scale;
+    //[SerializeField] AnimationCurve cam_pull;
+    //[SerializeField] float cam_offset_scale;
     Transform cam;
-    Vector3 cam_center;
     Vector2 cam_vel = new Vector2();
-    [SerializeField] float cam_vert_const;
+    Vector3 cam_offset;
+    Vector3 cam_disjoint;
+    public bool cam_locked = false;
 
     // Movement
     Rigidbody2D rb;
     [SerializeField] float mv_speed;
-    [SerializeField] float mv_accel;
-    [SerializeField] float mv_airaccel;
+    //[SerializeField] float mv_accel;
+    //[SerializeField] float mv_airaccel;
     [SerializeField] float mv_friction;
     [SerializeField] float mv_gravity;
     [SerializeField] float mv_hi_jump_grav;
     [SerializeField] float mv_lo_jump_grav;
     [SerializeField] float mv_maxfall;
     [SerializeField] float mv_jumpforce;
-    [SerializeField] float cam_speed;
+    //[SerializeField] float cam_speed;
     public bool jumping = false;
     Vector2 respawn_pos;
 
@@ -36,7 +37,7 @@ public class Player : MonoBehaviour
     [SerializeField] bool grounded;
 
     // HP
-    [SerializeField] SpriteRenderer[] hp_icons;
+    [SerializeField] GameObject[] hp_icons;
     [SerializeField] int max_hp;
     int hp;
 
@@ -45,12 +46,21 @@ public class Player : MonoBehaviour
         respawn_pos = transform.position;
         rb = GetComponent<Rigidbody2D>();
         cam = Camera.main.transform;
-        cam_center = transform.position;
-        cam_center.z = cam.position.z;
-        cam.position = cam_center;
+        Vector3 cam_pos = transform.position;
+        cam_pos.z = cam.position.z;
+        cam_offset.z = cam_pos.z;
+        cam_offset.y = 4;
+        cam.position = cam_pos;
         hp = max_hp;
     }
-    
+
+    // smooth cam_offset
+    bool facing_right = true;
+    private void Update()
+    {
+        shiftCamOffset();
+    }
+
     /*
     *  MOVEMENT 
     */
@@ -118,7 +128,7 @@ public class Player : MonoBehaviour
 
     void move()
     {
-        checkGrounded();
+        grounded = Physics2D.OverlapBox(transform.position + Vector3.down, new Vector2(0.78f, 0.1f), 0, LM); // check grounded
         applyGravity();
         if (!has_control)
         {
@@ -165,10 +175,6 @@ public class Player : MonoBehaviour
 
         rb.velocity = vel;
     }
-    void checkGrounded()
-    {
-        grounded = Physics2D.OverlapBox(transform.position + Vector3.down, new Vector2(0.78f, 0.1f), 0, LM);
-    }
 
     void applyGravity()
     {// no delta time used, this is in FixedUpdate
@@ -194,9 +200,8 @@ public class Player : MonoBehaviour
             else
                 vel.y -= mv_gravity * grav_coeff;
         }
-        else// if (!grounded)
+        else
             vel.y = mv_maxfall;
-        //else 
         rb.velocity = vel;
     }
 
@@ -232,26 +237,70 @@ public class Player : MonoBehaviour
 
     void camMove()
     {
-        cam_center.x = Mathf.SmoothDamp(cam_center.x, transform.position.x, ref cam_vel.x, 0.25f);                  // HK cam DOES NOT smoothstep
-        cam_center.y = Mathf.SmoothDamp(cam_center.y, transform.position.y + cam_vert_const, ref cam_vel.y, 0.25f); // It is locked to a point just ahead of the player.
-                                                                                                                    // could smoothstep this targetpoint only after a blink
+        if (cam_locked)
+            return;
 
-        //Vector2 offset = Input.mousePosition;
-        //Vector2 screen_half;
-        //screen_half.x = Screen.width / 2;
-        //screen_half.y = Screen.height / 2;
-        //offset = (offset - screen_half) / screen_half;
-        //
-        //offset.x = cam_pull.Evaluate(Mathf.Abs(offset.x)) * Mathf.Sign(offset.x);
-        //offset.y = cam_pull.Evaluate(Mathf.Abs(offset.y)) * Mathf.Sign(offset.y);
-        //offset *= cam_offset_scale;
-        //cam.position = cam_center + (Vector3)offset;
-        cam.position = cam_center;
+        cam_disjoint.x = Mathf.SmoothDamp(cam_disjoint.x, 0, ref cam_vel.x, 0.25f);
+        cam_disjoint.y = Mathf.SmoothDamp(cam_disjoint.y, 0, ref cam_vel.y, 0.25f);
+        Vector3 cam_target = transform.position + cam_offset + cam_disjoint;
+        cam.position = cam_target;
+    }
 
-        //Vector3 pos = cam.position;
-        //pos.x = Mathf.SmoothDamp(pos.x, transform.position.x, ref cam_vel.x, 0.5f);
-        //pos.y = Mathf.SmoothDamp(pos.y, transform.position.y, ref cam_vel.y, 0.5f);
-        //cam.position = pos;
+    float cam_offset_vel = 0;
+    void shiftCamOffset()
+    {
+        if (!has_control)
+            return;
+        bool L = Input.GetKey(KeyCode.A);
+        bool R = Input.GetKey(KeyCode.D);
+        if(L ^ R)
+        {
+            if (L)
+            {
+                facing_right = false;
+            }
+            else if (R)
+            {
+                facing_right = true;
+            }
+        }
+        cam_offset.x = Mathf.SmoothDamp(cam_offset.x, (facing_right ? 1 : -1), ref cam_offset_vel, 0.25f);
+    }
+
+    public bool hurt(int dmg = 1)
+    {
+        //hp_icons[hp].animator.trigger("hurt");
+        hp -= dmg;
+        if(hp <= 0)
+        {
+            //death
+            return true;
+        }
+        return false;
+    }
+
+    public void heal()
+    {
+        if (hp == max_hp)
+            return;
+        hp += 1;
+        //hp_icons[hp].animator.trigger("heal");
+    }
+
+    IEnumerator death()
+    {
+        Destroy(gameObject, 1f);
+        // Animator.trigger("death")
+        yield return new WaitForSeconds(1f);
+
+
+        //GameManager.gm.Load scene ( hp = max_hp, entrace = cairn )
+        
+    }
+
+    public void updateHp()
+    {
+
     }
 
     /*
@@ -260,6 +309,7 @@ public class Player : MonoBehaviour
     public void hitHazard()
     {
         Debug.Log("HAZARD");
+        hurt();
         transform.position = respawn_pos;
         rb.velocity *= 0;
     }
@@ -268,6 +318,11 @@ public class Player : MonoBehaviour
     {
         Debug.Log("Checkpoint");
         respawn_pos = pos;
+    }
+
+    public void onBlink(Vector2 travelled)
+    {
+        cam_disjoint -= travelled;
     }
 }
 
