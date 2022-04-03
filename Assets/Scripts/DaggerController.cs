@@ -326,6 +326,8 @@ public class DaggerController : MonoBehaviour
 
         if (clear)
         {
+            player.onBlinkEarly();
+
             blink_cd = BLINK_COOLDOWN;
             cooldown = DGR_COOLDOWN;
             Vector2 travelled = pos - (Vector2)transform.position; 
@@ -334,7 +336,7 @@ public class DaggerController : MonoBehaviour
             collectDagger(dgr.gameObject);
             GetComponent<Player>().jumping = false;
 
-            player.onBlink(travelled);
+            player.onBlinkLate(travelled);
         }
     }
 

@@ -62,7 +62,7 @@ public class Dagger : MonoBehaviour
         {
             hit_pos.Add(collision.GetContact(i).point - pos);
             hit_norm.Add(collision.GetContact(i).normal);
-            Debug.DrawRay(hit_pos[i], hit_norm[i], Color.blue, 5);
+            Debug.DrawRay(hit_pos[i] + (Vector2)transform.position, hit_norm[i], Color.blue, 5);
         }
 
         OnHit(collision);
@@ -81,6 +81,8 @@ public class Dagger : MonoBehaviour
 
         if (recalling)
             return;
+        if((owner.transform.position - transform.position).sqrMagnitude < 1)
+            owner.collectDagger(this.gameObject);
 
         recalling = true;
         rb.constraints = RigidbodyConstraints2D.None;

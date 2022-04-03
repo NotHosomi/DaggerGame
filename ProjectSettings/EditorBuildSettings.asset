@@ -11,4 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Stages/TestRoom2.unity
     guid: 3703377e4955bf54187d86a2a146768b
+  - enabled: 1
+    path: Assets/Scenes/Stages/VertRoom.unity
+    guid: e24a1f59c44e97447b162652b3a99d3c
   m_configObjects: {}

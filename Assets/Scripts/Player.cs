@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class Player : MonoBehaviour
 {
@@ -14,7 +15,9 @@ public class Player : MonoBehaviour
     Vector2 cam_vel = new Vector2();
     Vector3 cam_offset;
     Vector3 cam_disjoint;
+    const float cam_vert_offset = 2;
     public bool cam_locked = false;
+    Bounds cam_bounds;
 
     // Movement
     Rigidbody2D rb;
@@ -49,9 +52,13 @@ public class Player : MonoBehaviour
         Vector3 cam_pos = transform.position;
         cam_pos.z = cam.position.z;
         cam_offset.z = cam_pos.z;
-        cam_offset.y = 4;
+        cam_offset.y = cam_vert_offset;
         cam.position = cam_pos;
         hp = max_hp;
+
+        cam_bounds = GameObject.Find("Tilemap").GetComponent<Tilemap>().localBounds;
+        cam_bounds.max -= new Vector3(19, 11, 0);
+        cam_bounds.min += new Vector3(19, 11, 0);
     }
 
     // smooth cam_offset
@@ -138,17 +145,13 @@ public class Player : MonoBehaviour
         float wish_dir = 0;
         bool wish_jump = false;
         if (Input.GetKey(KeyCode.Space)) // this is to be updated
-        {
             wish_jump = true;
-        }
+        else
+            jumping = false;
         if (Input.GetKey(KeyCode.A))
-        {
             --wish_dir;
-        }
         if (Input.GetKey(KeyCode.D))
-        {
             ++wish_dir;
-        }
 
         Vector2 vel = rb.velocity;
 
@@ -163,7 +166,7 @@ public class Player : MonoBehaviour
         // air movement feels jank sometimes :\
 
 
-        if (wish_jump && grounded) // this is to be updated
+        if (wish_jump && grounded && !jumping) // this is to be updated
         {
             jumping = true;
             vel.y = mv_jumpforce;
@@ -188,16 +191,31 @@ public class Player : MonoBehaviour
 
         if (vel.y > mv_maxfall)
         {
-            if (vel.y > 0) // standard falling
+            /*
+            if (vel.y > 0)
             {
                 if(jumping)
+                {
                     //vel.y -= mv_gravity * mv_hi_jumpgrav_mult * grav_coeff;
                     vel.y -= mv_hi_jump_grav * grav_coeff;
+                    if (Input.GetKeyUp(KeyCode.Space))
+                        vel.y = 0;
+                }
                 else
                     //vel.y -= mv_gravity * mv_lo_jumpgrav_mult * grav_coeff;
                     vel.y -= mv_lo_jump_grav * grav_coeff;
             }
-            else
+            else  // standard falling
+                vel.y -= mv_gravity * grav_coeff;
+            */
+            if (jumping)
+            {
+                //vel.y -= mv_gravity * mv_hi_jumpgrav_mult * grav_coeff;
+                vel.y -= mv_hi_jump_grav * grav_coeff;
+                if (Input.GetKeyUp(KeyCode.Space))
+                    vel.y = 0;
+            }
+            else  // standard falling
                 vel.y -= mv_gravity * grav_coeff;
         }
         else
@@ -244,6 +262,7 @@ public class Player : MonoBehaviour
         cam_disjoint.y = Mathf.SmoothDamp(cam_disjoint.y, 0, ref cam_vel.y, 0.25f);
         Vector3 cam_target = transform.position + cam_offset + cam_disjoint;
         cam.position = cam_target;
+        camClamp();
     }
 
     float cam_offset_vel = 0;
@@ -265,6 +284,14 @@ public class Player : MonoBehaviour
             }
         }
         cam_offset.x = Mathf.SmoothDamp(cam_offset.x, (facing_right ? 1 : -1), ref cam_offset_vel, 0.25f);
+    }
+
+    void camClamp()
+    {
+        Vector3 pos = cam.position;
+        pos.x = Mathf.Clamp(pos.x, cam_bounds.min.x, cam_bounds.max.x);
+        pos.y = Mathf.Clamp(pos.y, cam_bounds.min.y, cam_bounds.max.y);
+        cam.position = pos;
     }
 
     public bool hurt(int dmg = 1)
@@ -309,9 +336,17 @@ public class Player : MonoBehaviour
     public void hitHazard()
     {
         Debug.Log("HAZARD");
-        hurt();
-        transform.position = respawn_pos;
         rb.velocity *= 0;
+        if (hurt())
+            return;
+
+        // todo, put this in a coroutine with an animation
+        transform.position = respawn_pos;
+        //move camera
+        cam.position = respawn_pos;
+        cam_disjoint *= 0;
+        camClamp();
+
     }
 
     public void setRespawn(Vector2 pos)
@@ -320,10 +355,25 @@ public class Player : MonoBehaviour
         respawn_pos = pos;
     }
 
-    public void onBlink(Vector3 travelled)
+    Vector2 cam_root_old;
+    public void onBlinkEarly()
     {
-        cam_disjoint -= travelled;
+        //cam_root_old = transform.position;
+        //cam_root_old.y -= cam_vert_offset;
+        //cam_root_old.x = Mathf.Clamp(cam_root_old.x, cam_bounds.min.x, cam_bounds.max.x);
+        //cam_root_old.y = Mathf.Clamp(cam_root_old.y, cam_bounds.min.y, cam_bounds.max.y);
     }
+    public void onBlinkLate(Vector3 travelled)
+    {
+        //cam_disjoint += (Vector3)cam_root_old - transform.position;
+
+        cam_disjoint -= travelled;
+        Vector3 cam_target = transform.position + cam_offset + cam_disjoint;
+        cam_target.x = Mathf.Clamp(cam_target.x, cam_bounds.min.x, cam_bounds.max.x);
+        cam_target.y = Mathf.Clamp(cam_target.y, cam_bounds.min.y, cam_bounds.max.y);
+        cam_disjoint = cam_target - transform.position - cam_offset;
+    }
+
 }
 
 // Idea:
