@@ -27,7 +27,7 @@ public class Player : MonoBehaviour
     [SerializeField] float mv_friction;
     [SerializeField] float mv_gravity;
     [SerializeField] float mv_hi_jump_grav;
-    [SerializeField] float mv_lo_jump_grav;
+    //[SerializeField] float mv_lo_jump_grav;
     [SerializeField] float mv_maxfall;
     [SerializeField] float mv_jumpforce;
     //[SerializeField] float cam_speed;
@@ -40,9 +40,9 @@ public class Player : MonoBehaviour
     [SerializeField] bool grounded;
 
     // HP
-    [SerializeField] GameObject[] hp_icons;
-    [SerializeField] int max_hp;
-    int hp;
+    public List<GameObject> hp_icons;
+    public int hp;
+    public bool invulnerable;
 
     private void Awake()
     {
@@ -54,7 +54,7 @@ public class Player : MonoBehaviour
         cam_offset.z = cam_pos.z;
         cam_offset.y = cam_vert_offset;
         cam.position = cam_pos;
-        hp = max_hp;
+        hp = GameManager.gm.current_hp;
 
         cam_bounds = GameObject.Find("Tilemap").GetComponent<Tilemap>().localBounds;
         cam_bounds.max -= new Vector3(19, 11, 0);
@@ -294,13 +294,19 @@ public class Player : MonoBehaviour
         cam.position = pos;
     }
 
+    // returns true if the player dies
     public bool hurt(int dmg = 1)
     {
-        //hp_icons[hp].animator.trigger("hurt");
+        if (invulnerable)
+            return false;
+
         hp -= dmg;
-        if(hp <= 0)
+        hp_icons[hp].GetComponent<Animator>().SetTrigger("hurt");
+        if (hp <= 0)
         {
             //death
+            Destroy(gameObject, 1f);
+            // GetComponent<Animator>().SetTrigger("death")
             return true;
         }
         return false;
@@ -308,26 +314,10 @@ public class Player : MonoBehaviour
 
     public void heal()
     {
-        if (hp == max_hp)
+        if (hp == GameManager.gm.max_hp)
             return;
+        hp_icons[hp].GetComponent<Animator>().SetTrigger("heal");
         hp += 1;
-        //hp_icons[hp].animator.trigger("heal");
-    }
-
-    IEnumerator death()
-    {
-        Destroy(gameObject, 1f);
-        // Animator.trigger("death")
-        yield return new WaitForSeconds(1f);
-
-
-        //GameManager.gm.Load scene ( hp = max_hp, entrace = cairn )
-        
-    }
-
-    public void updateHp()
-    {
-
     }
 
     /*
@@ -374,6 +364,12 @@ public class Player : MonoBehaviour
         cam_disjoint = cam_target - transform.position - cam_offset;
     }
 
+    private void OnDestroy()
+    {
+        if(hp<=0)
+            GameManager.gm.onPlayerDeath();
+
+    }
 }
 
 // Idea:

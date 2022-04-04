@@ -6,6 +6,7 @@ TagManager:
   tags:
   - PLAYER_bars
   - PLAYER_arcs
+  - cairn
   layers:
   - Default
   - TransparentFX

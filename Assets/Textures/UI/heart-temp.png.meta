@@ -1,19 +1,19 @@
 fileFormatVersion: 2
-guid: 3ab7a6645ab47a44e97c64645acb4905
+guid: 5fd2042c702c3e342903954ca88e2152
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8298943205471034916
-    second: Dagger_1_0
+      213: 1084956651534882163
+    second: heart-temp_0
   - first:
-      213: 4231383923550169775
-    second: Dagger_1_1
+      213: 4884623627122892828
+    second: heart-temp_1
   - first:
-      213: 5624434206270267432
-    second: Dagger_1_2
+      213: -6746893492270095572
+    second: heart-temp_2
   - first:
-      213: 147588229188771401
-    second: Dagger_1_3
+      213: -760647730146891966
+    second: heart-temp_3
   externalObjects: {}
   serializedVersion: 11
   mipmaps:
@@ -79,7 +79,7 @@ TextureImporter:
     buildTarget: DefaultTexturePlatform
     maxTextureSize: 2048
     resizeAlgorithm: 0
-    textureFormat: -1
+    textureFormat: 4
     textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
@@ -91,7 +91,7 @@ TextureImporter:
     buildTarget: Standalone
     maxTextureSize: 2048
     resizeAlgorithm: 0
-    textureFormat: -1
+    textureFormat: 4
     textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
@@ -103,76 +103,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Dagger_1_0
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 96
-        width: 34
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: cd1e1c2df1b34dc80800000000000000
-      internalID: -8298943205471034916
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Dagger_1_1
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 64
-        width: 34
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: faaa1877245e8ba30800000000000000
-      internalID: 4231383923550169775
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Dagger_1_2
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 32
-        width: 34
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 820ab4f6c110e0e40800000000000000
-      internalID: 5624434206270267432
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Dagger_1_3
+      name: heart-temp_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 34
-        height: 32
+        width: 48
+        height: 48
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -180,8 +117,71 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 94e53d566b65c0200800000000000000
-      internalID: 147588229188771401
+      spriteID: 3751f63835a8e0f00800000000000000
+      internalID: 1084956651534882163
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: heart-temp_1
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c10e32c1f4ba9c340800000000000000
+      internalID: 4884623627122892828
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: heart-temp_2
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c23a8d78d183e52a0800000000000000
+      internalID: -6746893492270095572
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: heart-temp_3
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 24723656be2a175f0800000000000000
+      internalID: -760647730146891966
       vertices: []
       indices: 
       edges: []
