@@ -50,11 +50,14 @@ public class Dagger : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        Debug.Log("Hit");
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Projectile"))
+            return;
 
         rb.constraints = RigidbodyConstraints2D.FreezeAll;
         in_air = false;
-        
+        foreach (Collider2D c in GetComponents<Collider2D>())
+            c.enabled = false;
+
         Vector2 pos = transform.position;
         hit_pos = new List<Vector2>();
         hit_norm = new List<Vector2>();

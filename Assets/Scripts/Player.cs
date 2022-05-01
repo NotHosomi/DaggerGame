@@ -32,7 +32,7 @@ public class Player : MonoBehaviour
     [SerializeField] float mv_jumpforce;
     //[SerializeField] float cam_speed;
     public bool jumping = false;
-    Vector2 respawn_pos;
+    Vector2 reset_pos;
 
     bool has_control = true;
     public float grav_coeff = 1;
@@ -46,7 +46,7 @@ public class Player : MonoBehaviour
 
     private void Awake()
     {
-        respawn_pos = transform.position;
+        reset_pos = transform.position;
         rb = GetComponent<Rigidbody2D>();
         cam = Camera.main.transform;
         Vector3 cam_pos = transform.position;
@@ -295,7 +295,7 @@ public class Player : MonoBehaviour
     }
 
     // returns true if the player dies
-    public bool hurt(int dmg = 1)
+    public bool hurt(int dmg = 1, int knockback = 0)
     {
         if (invulnerable)
             return false;
@@ -309,7 +309,18 @@ public class Player : MonoBehaviour
             // GetComponent<Animator>().SetTrigger("death")
             return true;
         }
+        StartCoroutine(ImmunityCo());
         return false;
+    }
+
+    bool immunity = false;
+    IEnumerator ImmunityCo()
+    {
+        immunity = true;
+        GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 0.5f);
+        yield return new WaitForSeconds(1f);
+        GetComponent<SpriteRenderer>().color = Color.white;
+        immunity = false;
     }
 
     public void heal()
@@ -331,18 +342,17 @@ public class Player : MonoBehaviour
             return;
 
         // todo, put this in a coroutine with an animation
-        transform.position = respawn_pos;
+        transform.position = reset_pos;
         //move camera
-        cam.position = respawn_pos;
+        cam.position = reset_pos;
         cam_disjoint *= 0;
         camClamp();
-
     }
 
     public void setRespawn(Vector2 pos)
     {
         Debug.Log("Checkpoint");
-        respawn_pos = pos;
+        reset_pos = pos;
     }
 
     Vector2 cam_root_old;
@@ -370,6 +380,7 @@ public class Player : MonoBehaviour
             GameManager.gm.onPlayerDeath();
 
     }
+
 }
 
 // Idea:

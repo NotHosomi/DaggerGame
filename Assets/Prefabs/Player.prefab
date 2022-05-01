@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: -4638731451508533988}
   m_Layer: 10
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -105,47 +105,19 @@ MonoBehaviour:
   LM:
     serializedVersion: 2
     m_Bits: 1
-  cam_pull:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 1
-      outSlope: 1
-      tangentMode: 34
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 1
-      outSlope: 1
-      tangentMode: 34
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  cam_offset_scale: 8
-  cam_vert_const: 4
+  cam_locked: 0
   mv_speed: 7
-  mv_accel: 100
-  mv_airaccel: 80
   mv_friction: 100
   mv_gravity: 2.5
   mv_hi_jump_grav: 1
-  mv_lo_jump_grav: 4
   mv_maxfall: -20
   mv_jumpforce: 20
-  cam_speed: 0.2
   jumping: 0
   grav_coeff: 1
   grounded: 1
   hp_icons: []
-  max_hp: 0
+  hp: 0
+  invulnerable: 0
 --- !u!114 &8149935161994348994
 MonoBehaviour:
   m_ObjectHideFlags: 0
