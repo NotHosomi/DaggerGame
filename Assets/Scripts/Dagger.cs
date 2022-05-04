@@ -38,6 +38,8 @@ public class Dagger : MonoBehaviour
         }
         if (recalling)
             return_time += Time.deltaTime;
+        deflect_cd -= Time.deltaTime;
+        deflect_cd = Mathf.Max(0, deflect_cd);
     }
 
     private void FixedUpdate()
@@ -172,5 +174,15 @@ public class Dagger : MonoBehaviour
             rb.velocity *= -1;
             fizzleDagger();
         }
+    }
+
+    float deflect_cd = 0;
+    public bool hasDeflected()
+    {
+        return deflect_cd > 0;
+    }
+    public void deflect()
+    {
+        deflect_cd = 1f;
     }
 }

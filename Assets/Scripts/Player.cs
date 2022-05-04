@@ -42,7 +42,6 @@ public class Player : MonoBehaviour
     // HP
     public List<GameObject> hp_icons;
     public int hp;
-    public bool invulnerable;
 
     private void Awake()
     {
@@ -294,34 +293,30 @@ public class Player : MonoBehaviour
         cam.position = pos;
     }
 
-    // returns true if the player dies
+    bool isDying = false;
+    // returns true if the player took damage
     public bool hurt(int dmg = 1, int knockback = 0)
     {
         if (invulnerable)
             return false;
 
         hp -= dmg;
+        hp = Math.Max(0, hp);
         hp_icons[hp].GetComponent<Animator>().SetTrigger("hurt");
-        if (hp <= 0)
+        if (hp == 0)
         {
             //death
+            isDying = true;
+            rb.constraints = RigidbodyConstraints2D.FreezeAll;
             Destroy(gameObject, 1f);
             // GetComponent<Animator>().SetTrigger("death")
             return true;
         }
-        StartCoroutine(ImmunityCo());
-        return false;
+        StartCoroutine(onTakeDamage(knockback));
+        return true;
     }
 
-    bool immunity = false;
-    IEnumerator ImmunityCo()
-    {
-        immunity = true;
-        GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 0.5f);
-        yield return new WaitForSeconds(1f);
-        GetComponent<SpriteRenderer>().color = Color.white;
-        immunity = false;
-    }
+    public bool invulnerable = false;
 
     public void heal()
     {
@@ -338,7 +333,7 @@ public class Player : MonoBehaviour
     {
         Debug.Log("HAZARD");
         rb.velocity *= 0;
-        if (hurt())
+        if (isDying)
             return;
 
         // todo, put this in a coroutine with an animation
@@ -376,15 +371,34 @@ public class Player : MonoBehaviour
 
     private void OnDestroy()
     {
-        if(hp<=0)
+        if(hp==0)
             GameManager.gm.onPlayerDeath();
-
     }
+    
+    IEnumerator onTakeDamage(int dir)
+    {
+        Time.timeScale = 0.01f;
+        GameObject dmg_sprite = transform.GetChild(4).gameObject;
+        has_control = false;
 
+        dmg_sprite.SetActive(true);
+        dmg_sprite.transform.localScale = new Vector3(-dir * 2.5f, 1, 1);
+
+        invulnerable = true;
+        GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 0.5f);
+
+        yield return new WaitForSecondsRealtime(0.15f);
+        dmg_sprite.SetActive(false);
+        yield return new WaitForSecondsRealtime(0.15f);
+
+        Time.timeScale = 1f;
+        rb.velocity = new Vector3((facing_right ? -10 : 10), 8, 0);
+
+        yield return new WaitForSecondsRealtime(0.2f);
+        has_control = true;
+
+        yield return new WaitForSecondsRealtime(0.8f);
+        GetComponent<SpriteRenderer>().color = Color.white;
+        invulnerable = false;
+    }
 }
-
-// Idea:
-// keydown when in air
-// player speed massively reduced
-// 5 quick attacks
-// then speed returns

@@ -18,13 +18,13 @@ TagManager:
   - 
   - 
   - 
-  - 
+  - EnvCollisions
   - Player
   - Dagger
-  - Projectile
+  - 
   - Enemy
   - Interactable
-  - 
+  - Hurtbox
   - 
   - 
   - 

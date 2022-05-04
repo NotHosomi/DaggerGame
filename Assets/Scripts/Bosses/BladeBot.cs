@@ -21,15 +21,17 @@ public class BladeBot : MonoBehaviour
     {
         if(cooldown <= 0)
         {
-            //PickBehaviour();
-            StartCoroutine("attackUp");
+            PickBehaviour();
+
+            //cooldown = 5f;
+            //StartCoroutine(spin(3, 180 + transform.rotation.eulerAngles.z));
         }
         cooldown -= Time.deltaTime;
     }
 
     void PickBehaviour()
     {
-        int b = Random.Range(0, 1);
+        int b = Random.Range(0, 4);
         switch (b)
         {
             case 0:
@@ -39,46 +41,35 @@ public class BladeBot : MonoBehaviour
                 break;
             case 3:
                 cooldown = 5f;
+                StartCoroutine(attackDown());
                 break;
 
         }
+        Debug.Log("Pick attack, cd: " + cooldown);
     }
 
     void projectileAtk()
     {
-        if(player.position.y < transform.position.y)
+        if(player.position.y - 3 > transform.position.y)
         {
-            // downwards attack
-            if (player.position.x < transform.position.x)
-            {
-                anim.SetTrigger("atk_up_l");
-                StartCoroutine(attackUp());
-            }
-            else
-            {
-                anim.SetTrigger("atk_up_r");
-                StartCoroutine(attackUp());
-            }
+            StartCoroutine(attackUp(player.position.x < transform.position.x));
         }
         else
         {
-            cooldown = 2f;
-            // upwards attack
-            if (player.position.x < transform.position.x)
-            {
-
-            }
-            else
-            {
-
-            }
+            cooldown = 6.33f;
+            StartCoroutine(attackDown());
         }
     }
 
 
 
-    IEnumerator attackUp()
+    IEnumerator attackUp(bool left)
     {
+        if(left)
+            anim.SetTrigger("atk_up_l");
+        else
+            anim.SetTrigger("atk_up_r");
+
         anim.SetTrigger("atk_up_r");
         cooldown = 3.25f;
         for (int i = 0; i < 4; ++i)
@@ -93,18 +84,85 @@ public class BladeBot : MonoBehaviour
             rot_z += Random.Range(-5f, 5f);
             dgr.transform.rotation = Quaternion.Euler(0f, 0f, rot_z - 90);
 
-            dgr.GetComponent<Rigidbody2D>().velocity = dgr.transform.up * 15;
+            dgr.GetComponent<Rigidbody2D>().velocity = dgr.transform.up * 30f;
             Destroy(dgr, 10);
         }
     }
 
     IEnumerator attackDown()
     {
-        yield return new WaitForSeconds(0.25f);
-        for (int i = 0; i < 16; ++i)
+        Debug.Log("Down attack");
+        anim.SetTrigger("atk_down");
+        // fade in: 0.5
+        // jump: 0.5
+        // spin: 0.5
+        // hold: 0.7166
+        // shoot: 0.7
+        // unspin: 0.0833
+        // land: 1.5
+
+        yield return new WaitForSeconds(1);
+        // TODO spin
+        // find desired rot, set angular velocity
+        Vector2 dir = player.transform.position - transform.position;
+        float theta = Mathf.Atan2(dir.y, dir.x) * 180/Mathf.PI;
+        
+        StartCoroutine(spin(0.5f, theta));
+        yield return new WaitForSeconds(0.5f); // spin
+        // end spin
+        yield return new WaitForSeconds(0.7166f); // delay
+
+        // shoot
+        Vector3 pos = transform.GetChild(0).position - transform.GetChild(0).up * 0.5f;
+        dir = player.transform.position - pos;
+        dir.Normalize();
+        Debug.DrawLine(pos, (Vector2)pos + dir, Color.blue, 5);
+
+        int shard_count = 32;
+        for (int i = 0; i < shard_count; ++i)
         {
-            yield return new WaitForSeconds(0.05f);
-            GameObject dgr = Instantiate(projectile2);
+            Vector2 lcl_dir = dir += new Vector2(Random.Range(-0.25f, 0.25f), Random.Range(-0.25f, 0.25f));
+            lcl_dir.Normalize();
+            GameObject shard = Instantiate(projectile2, pos, transform.rotation);
+            //shard.GetComponent<Rigidbody2D>().velocity = -shard.transform.up * 50f;
+            shard.GetComponent<Rigidbody2D>().velocity = lcl_dir * 50f;
+            yield return new WaitForSeconds(0.6f / shard_count);
         }
+
+        Debug.Log("Call: " + 360);
+        StartCoroutine(spin(0.833f, 360));
+    }
+
+    IEnumerator spin(float duration, float end)
+    {
+        float start = transform.rotation.eulerAngles.z;
+        Debug.Log("spin from " + start + " to " + end);
+
+        if (start == end)
+            yield break;
+        float t0 = Time.time;
+        float smooth;
+        float prev = 0;
+        float t = 0;
+        Transform pivot = transform.GetChild(0);
+        Debug.DrawLine(new Vector3(0, 0, 0), transform.position, Color.green, 3);
+        Debug.DrawLine(transform.position, transform.GetChild(0).position, Color.green, 3);
+        while (t < duration)
+        {
+            t = (Time.time - t0) / duration;
+            smooth = Mathf.SmoothStep(start, end, t);
+            foreach(Transform child in transform)
+            {
+                transform.RotateAround(pivot.position, Vector3.forward, smooth - prev);
+            }
+
+            prev = smooth;
+            yield return 0; // wait a frame
+        }
+        foreach (Transform child in transform)
+        {
+            transform.rotation = Quaternion.Euler(0, 0, end);
+        }
+        Debug.Log("end spin: " + transform.rotation.eulerAngles.z);
     }
 }

@@ -3248,8 +3248,8 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    attribute: m_LocalEulerAngles.x
-    path: BladeBot_body_0
+    attribute: m_LocalEulerAngles.z
+    path: BladeBot_leg_R
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -3259,7 +3259,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.y
-    path: BladeBot_body_0
+    path: BladeBot_leg_R
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -3268,8 +3268,8 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    attribute: m_LocalEulerAngles.z
-    path: BladeBot_body_0
+    attribute: m_LocalEulerAngles.x
+    path: BladeBot_leg_R
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -3308,7 +3308,7 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    attribute: m_LocalEulerAngles.z
+    attribute: m_LocalEulerAngles.x
     path: BladeBot_leg_L
     classID: 4
     script: {fileID: 0}
@@ -3328,7 +3328,7 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    attribute: m_LocalEulerAngles.x
+    attribute: m_LocalEulerAngles.z
     path: BladeBot_leg_L
     classID: 4
     script: {fileID: 0}
@@ -3369,7 +3369,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.x
-    path: BladeBot_leg_R
+    path: BladeBot_body_0
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -3379,7 +3379,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.y
-    path: BladeBot_leg_R
+    path: BladeBot_body_0
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -3389,7 +3389,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.z
-    path: BladeBot_leg_R
+    path: BladeBot_body_0
     classID: 4
     script: {fileID: 0}
   m_HasGenericRootTransform: 0
