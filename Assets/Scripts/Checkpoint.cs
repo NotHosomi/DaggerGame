@@ -12,4 +12,10 @@ public class Checkpoint : MonoBehaviour
             P.setRespawn(transform.position);
         }
     }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawSphere(transform.position, 0.5f);
+    }
 }

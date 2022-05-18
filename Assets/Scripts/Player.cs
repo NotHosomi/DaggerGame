@@ -7,17 +7,7 @@ using UnityEngine.Tilemaps;
 public class Player : MonoBehaviour
 {
     [SerializeField] LayerMask LM;
-
-    // Camera
-    //[SerializeField] AnimationCurve cam_pull;
-    //[SerializeField] float cam_offset_scale;
-    Transform cam;
-    Vector2 cam_vel = new Vector2();
-    Vector3 cam_offset;
-    Vector3 cam_disjoint;
-    const float cam_vert_offset = 2;
-    public bool cam_locked = false;
-    Bounds cam_bounds;
+    CamControl cc;
 
     // Movement
     Rigidbody2D rb;
@@ -30,11 +20,10 @@ public class Player : MonoBehaviour
     //[SerializeField] float mv_lo_jump_grav;
     [SerializeField] float mv_maxfall;
     [SerializeField] float mv_jumpforce;
-    //[SerializeField] float cam_speed;
     public bool jumping = false;
     Vector2 reset_pos;
 
-    bool has_control = true;
+    public bool has_control = true;
     public float grav_coeff = 1;
 
     [SerializeField] bool grounded;
@@ -47,24 +36,12 @@ public class Player : MonoBehaviour
     {
         reset_pos = transform.position;
         rb = GetComponent<Rigidbody2D>();
-        cam = Camera.main.transform;
-        Vector3 cam_pos = transform.position;
-        cam_pos.z = cam.position.z;
-        cam_offset.z = cam_pos.z;
-        cam_offset.y = cam_vert_offset;
-        cam.position = cam_pos;
         hp = GameManager.gm.current_hp;
-
-        cam_bounds = GameObject.Find("Tilemap").GetComponent<Tilemap>().localBounds;
-        cam_bounds.max -= new Vector3(19, 11, 0);
-        cam_bounds.min += new Vector3(19, 11, 0);
     }
 
-    // smooth cam_offset
-    bool facing_right = true;
-    private void Update()
+    private void Start()
     {
-        shiftCamOffset();
+        cc = Camera.main.GetComponent<CamControl>();
     }
 
     /*
@@ -74,63 +51,6 @@ public class Player : MonoBehaviour
     {
         move();
     }
-
-    private void LateUpdate()
-    {
-        camMove();
-    }
-
-    // Old movement, slippery
-    /*
-    void move()
-    {
-        applyGravity();
-        if (!has_control)
-        {
-            return;
-        }
-
-        float wish_dir = 0;
-        bool wish_jump = false;
-        if (Input.GetKey(KeyCode.Space))
-        {
-            wish_jump = true;
-        }
-        if (Input.GetKey(KeyCode.A))
-        {
-            --wish_dir;
-        }
-        if (Input.GetKey(KeyCode.D))
-        {
-            ++wish_dir;
-        }
-        
-        Vector2 vel = rb.velocity;
-
-        // ignore player input if they're over max speed
-            if (Mathf.Abs(vel.x) < mv_speed && wish_dir != 0)
-        {
-            float accel = wish_dir * (grounded ? mv_accel : mv_airaccel) * Time.fixedDeltaTime;
-            vel.x += accel;
-            // if hit max speed
-            if (Mathf.Abs(vel.x) > mv_speed && Mathf.Sign(vel.x) == Mathf.Sign(wish_dir))
-            {
-                vel.x = wish_dir * mv_speed;
-            }
-        }
-        else if (grounded)
-        {
-            applyFriction();
-        }
-
-        if (wish_jump && grounded)
-        {
-            vel.y = mv_jumpforce;
-        }
-
-        rb.velocity = vel;
-    }
-    */
 
     void move()
     {
@@ -252,47 +172,6 @@ public class Player : MonoBehaviour
         Gizmos.DrawWireCube(transform.position + Vector3.down, new Vector3(0.78f, 0.1f, 1));
     }
 
-    void camMove()
-    {
-        if (cam_locked)
-            return;
-
-        cam_disjoint.x = Mathf.SmoothDamp(cam_disjoint.x, 0, ref cam_vel.x, 0.25f);
-        cam_disjoint.y = Mathf.SmoothDamp(cam_disjoint.y, 0, ref cam_vel.y, 0.25f);
-        Vector3 cam_target = transform.position + cam_offset + cam_disjoint;
-        cam.position = cam_target;
-        camClamp();
-    }
-
-    float cam_offset_vel = 0;
-    void shiftCamOffset()
-    {
-        if (!has_control)
-            return;
-        bool L = Input.GetKey(KeyCode.A);
-        bool R = Input.GetKey(KeyCode.D);
-        if(L ^ R)
-        {
-            if (L)
-            {
-                facing_right = false;
-            }
-            else if (R)
-            {
-                facing_right = true;
-            }
-        }
-        cam_offset.x = Mathf.SmoothDamp(cam_offset.x, (facing_right ? 1 : -1), ref cam_offset_vel, 0.25f);
-    }
-
-    void camClamp()
-    {
-        Vector3 pos = cam.position;
-        pos.x = Mathf.Clamp(pos.x, cam_bounds.min.x, cam_bounds.max.x);
-        pos.y = Mathf.Clamp(pos.y, cam_bounds.min.y, cam_bounds.max.y);
-        cam.position = pos;
-    }
-
     bool isDying = false;
     // returns true if the player took damage
     public bool hurt(int dmg = 1, int knockback = 0)
@@ -339,9 +218,7 @@ public class Player : MonoBehaviour
         // todo, put this in a coroutine with an animation
         transform.position = reset_pos;
         //move camera
-        cam.position = reset_pos;
-        cam_disjoint *= 0;
-        camClamp();
+        cc.jumpCam(reset_pos);
     }
 
     public void setRespawn(Vector2 pos)
@@ -350,23 +227,12 @@ public class Player : MonoBehaviour
         reset_pos = pos;
     }
 
-    Vector2 cam_root_old;
     public void onBlinkEarly()
     {
-        //cam_root_old = transform.position;
-        //cam_root_old.y -= cam_vert_offset;
-        //cam_root_old.x = Mathf.Clamp(cam_root_old.x, cam_bounds.min.x, cam_bounds.max.x);
-        //cam_root_old.y = Mathf.Clamp(cam_root_old.y, cam_bounds.min.y, cam_bounds.max.y);
     }
     public void onBlinkLate(Vector3 travelled)
     {
-        //cam_disjoint += (Vector3)cam_root_old - transform.position;
-
-        cam_disjoint -= travelled;
-        Vector3 cam_target = transform.position + cam_offset + cam_disjoint;
-        cam_target.x = Mathf.Clamp(cam_target.x, cam_bounds.min.x, cam_bounds.max.x);
-        cam_target.y = Mathf.Clamp(cam_target.y, cam_bounds.min.y, cam_bounds.max.y);
-        cam_disjoint = cam_target - transform.position - cam_offset;
+        cc.setCamDisjoint(travelled);
     }
 
     private void OnDestroy()
@@ -392,7 +258,7 @@ public class Player : MonoBehaviour
         yield return new WaitForSecondsRealtime(0.15f);
 
         Time.timeScale = 1f;
-        rb.velocity = new Vector3((facing_right ? -10 : 10), 8, 0);
+        rb.velocity = new Vector3((cc.facing_right ? -10 : 10), 8, 0); // change this
 
         yield return new WaitForSecondsRealtime(0.2f);
         has_control = true;

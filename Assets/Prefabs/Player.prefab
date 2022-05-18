@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5901603450801082243}
   - component: {fileID: 667584604029964281}
   - component: {fileID: 8149935161994348994}
+  - component: {fileID: 8046339177638784250}
   - component: {fileID: 2168369091190735176}
   - component: {fileID: -4638731451508533988}
   m_Layer: 10
@@ -106,7 +107,6 @@ MonoBehaviour:
   LM:
     serializedVersion: 2
     m_Bits: 1
-  cam_locked: 0
   mv_speed: 7
   mv_friction: 100
   mv_gravity: 2.5
@@ -114,6 +114,7 @@ MonoBehaviour:
   mv_maxfall: -20
   mv_jumpforce: 20
   jumping: 0
+  has_control: 1
   grav_coeff: 1
   grounded: 1
   hp_icons: []
@@ -172,6 +173,20 @@ MonoBehaviour:
   DGR_COOLDOWN: 0.5
   BLINK_COOLDOWN: 0.5
   BLINK_INHERIT_VELOCITY_MULT: 0.5
+--- !u!114 &8046339177638784250
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 62684457556525655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c84354a9134faf4fa7c1ec23f973696, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cam_locked: 0
+  facing_right: 1
 --- !u!50 &2168369091190735176
 Rigidbody2D:
   serializedVersion: 4
