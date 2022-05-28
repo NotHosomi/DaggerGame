@@ -1,59 +1,60 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class Player : MonoBehaviour
 {
     [SerializeField] LayerMask LM;
+    CamControl cc;
 
-    [SerializeField] AnimationCurve cam_pull;
-    [SerializeField] float cam_offset_scale;
-    Transform cam;
-    Vector3 cam_center;
-    Vector2 cam_vel = new Vector2();
-    [SerializeField] float cam_vert_const;
-
+    // Movement
     Rigidbody2D rb;
     [SerializeField] float mv_speed;
-    [SerializeField] float mv_accel;
-    [SerializeField] float mv_airaccel;
+    //[SerializeField] float mv_accel;
+    //[SerializeField] float mv_airaccel;
     [SerializeField] float mv_friction;
     [SerializeField] float mv_gravity;
+    [SerializeField] float mv_hi_jump_grav;
+    //[SerializeField] float mv_lo_jump_grav;
+    [SerializeField] float mv_maxfall;
     [SerializeField] float mv_jumpforce;
-    [SerializeField] float cam_speed;
-    Vector2 respawn_pos;
+    public bool jumping = false;
+    Vector2 reset_pos;
 
-    bool has_control = true;
+    public bool has_control = true;
     public float grav_coeff = 1;
 
     [SerializeField] bool grounded;
 
+    // HP
+    public List<GameObject> hp_icons;
+    public int hp;
+
     private void Awake()
     {
-        respawn_pos = transform.position;
+        reset_pos = transform.position;
         rb = GetComponent<Rigidbody2D>();
-        cam = Camera.main.transform;
-        cam_center = transform.position;
-        cam_center.z = cam.position.z;
-        cam.position = cam_center;
+        hp = GameManager.gm.current_hp;
     }
-    
+
+    private void Start()
+    {
+        cc = Camera.main.GetComponent<CamControl>();
+    }
+
     /*
     *  MOVEMENT 
     */
     private void FixedUpdate()
     {
-        checkGrounded();
         move();
-    }
-
-    private void LateUpdate()
-    {
-        camMove();
     }
 
     void move()
     {
+        grounded = Physics2D.OverlapBox(transform.position + Vector3.down, new Vector2(0.78f, 0.1f), 0, LM); // check grounded
         applyGravity();
         if (!has_control)
         {
@@ -62,58 +63,86 @@ public class Player : MonoBehaviour
 
         float wish_dir = 0;
         bool wish_jump = false;
-        if (Input.GetKey(KeyCode.Space))
-        {
+        if (Input.GetKey(KeyCode.Space)) // this is to be updated
             wish_jump = true;
-        }
+        else
+            jumping = false;
         if (Input.GetKey(KeyCode.A))
-        {
             --wish_dir;
-        }
         if (Input.GetKey(KeyCode.D))
-        {
             ++wish_dir;
-        }
-        
+
         Vector2 vel = rb.velocity;
 
-        // ignore player input if they're over max speed
-        if (Mathf.Abs(vel.x) < mv_speed && wish_dir != 0)
-        {
-            float accel = wish_dir * (grounded ? mv_accel : mv_airaccel) * Time.fixedDeltaTime;
-            vel.x += accel;
-            // if hit max speed
-            if (Mathf.Abs(vel.x) > mv_speed && Mathf.Sign(vel.x) == Mathf.Sign(wish_dir))
-            {
-                vel.x = wish_dir * mv_speed;
-            }
-        }
-        else if (grounded)
-        {
-            applyFriction();
-        }
 
-        if (wish_jump && grounded)
+        if (Mathf.Abs(vel.x) <= mv_speed + 0.01f) // less than max speed? (Epsilon accounts for floating point err)
+            vel.x = wish_dir * mv_speed;
+        else if (grounded)
+            vel.x *= 0.9f;
+        else if (Mathf.Sign(vel.x) != Math.Sign(wish_dir))
+            vel.x *= 0.99f;
+        //    vel.x -= Mathf.Log(Mathf.Abs(vel.x))/vel.x;   //Debug.Log("TODO: air friction");
+        // air movement feels jank sometimes :\
+
+
+        if (wish_jump && grounded && !jumping) // this is to be updated
         {
-            Debug.Log("Successful jump");
+            jumping = true;
             vel.y = mv_jumpforce;
+        }
+        if(!(wish_jump || grounded))
+        {
+            jumping = false;
         }
 
         rb.velocity = vel;
-    }
-
-    void checkGrounded()
-    {
-        grounded = Physics2D.OverlapBox(transform.position + Vector3.down, new Vector2(0.79f, 0.1f), 0, LM);
     }
 
     void applyGravity()
-    {
+    {// no delta time used, this is in FixedUpdate
         Vector2 vel = rb.velocity;
-        vel.y -= mv_gravity * grav_coeff;
+        if(grounded)
+        {
+            vel.y = 0;
+            rb.velocity = vel;
+            return;
+        }
+
+        if (vel.y > mv_maxfall)
+        {
+            /*
+            if (vel.y > 0)
+            {
+                if(jumping)
+                {
+                    //vel.y -= mv_gravity * mv_hi_jumpgrav_mult * grav_coeff;
+                    vel.y -= mv_hi_jump_grav * grav_coeff;
+                    if (Input.GetKeyUp(KeyCode.Space))
+                        vel.y = 0;
+                }
+                else
+                    //vel.y -= mv_gravity * mv_lo_jumpgrav_mult * grav_coeff;
+                    vel.y -= mv_lo_jump_grav * grav_coeff;
+            }
+            else  // standard falling
+                vel.y -= mv_gravity * grav_coeff;
+            */
+            if (jumping)
+            {
+                //vel.y -= mv_gravity * mv_hi_jumpgrav_mult * grav_coeff;
+                vel.y -= mv_hi_jump_grav * grav_coeff;
+                if (Input.GetKeyUp(KeyCode.Space))
+                    vel.y = 0;
+            }
+            else  // standard falling
+                vel.y -= mv_gravity * grav_coeff;
+        }
+        else
+            vel.y = mv_maxfall;
         rb.velocity = vel;
     }
 
+    // Why isn't this working ;w;
     void applyFriction()
     {
         Vector2 vel = rb.velocity;
@@ -133,30 +162,47 @@ public class Player : MonoBehaviour
         newspeed /= Mathf.Abs(vel.x);
 
         vel.x = vel.x * newspeed;
+        Debug.Log(newspeed);
         rb.velocity = vel;
     }
 
-    void camMove()
+    private void OnDrawGizmosSelected()
     {
-        cam_center.x = Mathf.SmoothDamp(cam_center.x, transform.position.x, ref cam_vel.x, 0.5f);
-        cam_center.y = Mathf.SmoothDamp(cam_center.y, transform.position.y + cam_vert_const, ref cam_vel.y, 0.5f);
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(transform.position + Vector3.down, new Vector3(0.78f, 0.1f, 1));
+    }
 
-        //Vector2 offset = Input.mousePosition;
-        //Vector2 screen_half;
-        //screen_half.x = Screen.width / 2;
-        //screen_half.y = Screen.height / 2;
-        //offset = (offset - screen_half) / screen_half;
-        //
-        //offset.x = cam_pull.Evaluate(Mathf.Abs(offset.x)) * Mathf.Sign(offset.x);
-        //offset.y = cam_pull.Evaluate(Mathf.Abs(offset.y)) * Mathf.Sign(offset.y);
-        //offset *= cam_offset_scale;
-        //cam.position = cam_center + (Vector3)offset;
-        cam.position = cam_center;
+    bool isDying = false;
+    // returns true if the player took damage
+    public bool hurt(int dmg = 1, int knockback = 0)
+    {
+        if (invulnerable)
+            return false;
 
-        //Vector3 pos = cam.position;
-        //pos.x = Mathf.SmoothDamp(pos.x, transform.position.x, ref cam_vel.x, 0.5f);
-        //pos.y = Mathf.SmoothDamp(pos.y, transform.position.y, ref cam_vel.y, 0.5f);
-        //cam.position = pos;
+        hp -= dmg;
+        hp = Math.Max(0, hp);
+        hp_icons[hp].GetComponent<Animator>().SetTrigger("hurt");
+        if (hp == 0)
+        {
+            //death
+            isDying = true;
+            rb.constraints = RigidbodyConstraints2D.FreezeAll;
+            Destroy(gameObject, 1f);
+            // GetComponent<Animator>().SetTrigger("death")
+            return true;
+        }
+        StartCoroutine(onTakeDamage(knockback));
+        return true;
+    }
+
+    public bool invulnerable = false;
+
+    public void heal()
+    {
+        if (hp == GameManager.gm.max_hp)
+            return;
+        hp_icons[hp].GetComponent<Animator>().SetTrigger("heal");
+        hp += 1;
     }
 
     /*
@@ -165,19 +211,60 @@ public class Player : MonoBehaviour
     public void hitHazard()
     {
         Debug.Log("HAZARD");
-        transform.position = respawn_pos;
         rb.velocity *= 0;
+        if (isDying)
+            return;
+
+        // todo, put this in a coroutine with an animation
+        transform.position = reset_pos;
+        //move camera
+        cc.jumpCam(reset_pos);
     }
 
     public void setRespawn(Vector2 pos)
     {
         Debug.Log("Checkpoint");
-        respawn_pos = pos;
+        reset_pos = pos;
+    }
+
+    public void onBlinkEarly()
+    {
+    }
+    public void onBlinkLate(Vector3 travelled)
+    {
+        cc.setCamDisjoint(travelled);
+    }
+
+    private void OnDestroy()
+    {
+        if(hp==0)
+            GameManager.gm.onPlayerDeath();
+    }
+    
+    IEnumerator onTakeDamage(int dir)
+    {
+        Time.timeScale = 0.01f;
+        GameObject dmg_sprite = transform.GetChild(4).gameObject;
+        has_control = false;
+
+        dmg_sprite.SetActive(true);
+        dmg_sprite.transform.localScale = new Vector3(-dir * 2.5f, 1, 1);
+
+        invulnerable = true;
+        GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 0.5f);
+
+        yield return new WaitForSecondsRealtime(0.15f);
+        dmg_sprite.SetActive(false);
+        yield return new WaitForSecondsRealtime(0.15f);
+
+        Time.timeScale = 1f;
+        rb.velocity = new Vector3((cc.facing_right ? -10 : 10), 8, 0); // change this
+
+        yield return new WaitForSecondsRealtime(0.2f);
+        has_control = true;
+
+        yield return new WaitForSecondsRealtime(0.8f);
+        GetComponent<SpriteRenderer>().color = Color.white;
+        invulnerable = false;
     }
 }
-
-// Idea:
-// keydown when in air
-// player speed massively reduced
-// 5 quick attacks
-// then speed returns

@@ -17,10 +17,10 @@ public class Dagger : MonoBehaviour
     protected List<Vector2> hit_norm;
     protected bool in_air = true;
 
-    bool returning = false;
+    bool recalling = false;
     public bool isReturning()
     {
-        return returning;
+        return recalling;
     }
 
     private void Awake()
@@ -30,18 +30,21 @@ public class Dagger : MonoBehaviour
 
     private void Update()
     {
+        checkScreenbounds();
         if (rb.velocity.sqrMagnitude > 0)
         {
-            Vector2 vel = rb.velocity * (returning ? -1 : 1);
+            Vector2 vel = rb.velocity * (recalling ? -1 : 1); // make the dagger travel backwards when recalling
             transform.rotation = Quaternion.AngleAxis(Mathf.Atan2(vel.y, vel.x) * Mathf.Rad2Deg, Vector3.forward);
         }
-        if (returning)
+        if (recalling)
             return_time += Time.deltaTime;
+        deflect_cd -= Time.deltaTime;
+        deflect_cd = Mathf.Max(0, deflect_cd);
     }
 
     private void FixedUpdate()
     {
-        if (returning)
+        if (recalling)
         {
             moveToOwner();
         }
@@ -49,10 +52,14 @@ public class Dagger : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        Debug.Log("Hit");
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Projectile"))
+            return;
+
         rb.constraints = RigidbodyConstraints2D.FreezeAll;
         in_air = false;
-        
+        foreach (Collider2D c in GetComponents<Collider2D>())
+            c.enabled = false;
+
         Vector2 pos = transform.position;
         hit_pos = new List<Vector2>();
         hit_norm = new List<Vector2>();
@@ -60,23 +67,29 @@ public class Dagger : MonoBehaviour
         {
             hit_pos.Add(collision.GetContact(i).point - pos);
             hit_norm.Add(collision.GetContact(i).normal);
-            Debug.DrawRay(hit_pos[i], hit_norm[i], Color.blue, 5);
+            Debug.DrawRay(hit_pos[i] + (Vector2)transform.position, hit_norm[i], Color.blue, 5);
         }
 
         OnHit(collision);
     }
 
     protected virtual void OnHit(Collision2D collision)
-    { }
-
-    public virtual void alt()
     {
-        //fizzleDagger();
+        //if (collision.otherCollider.GetComponent<Enemy>())    // TODO: Add enemy
+        //  collision.otherCollider.GetComponent<Enemy>().damage(owner.damage);
+        //  owner.collectDagger(this.gameObject);
+        //  return;
+    }
 
-        if (returning)
+    public virtual void recall()
+    {
+
+        if (recalling)
             return;
+        if((owner.transform.position - transform.position).sqrMagnitude < 1)
+            owner.collectDagger(this.gameObject);
 
-        returning = true;
+        recalling = true;
         rb.constraints = RigidbodyConstraints2D.None;
         in_air = true;
         rb.gravityScale = 0;
@@ -93,12 +106,11 @@ public class Dagger : MonoBehaviour
     Vector2 moveToOwner()
     {
         Vector2 dir = owner.transform.position - transform.position;
-        if (dir.SqrMagnitude() < 0.25f)
+        if (dir.SqrMagnitude() < 0.5f)
         {
-            owner.collectDagger();
+            owner.collectDagger(this.gameObject);
         }
         
-
         Vector2 vel = rb.velocity;
         float speed = (2* Mathf.Pow(2, -return_time * return_speed) + 2) * return_speed;
         vel = vel.normalized * speed;
@@ -127,8 +139,7 @@ public class Dagger : MonoBehaviour
 
     public void fizzleDagger()
     {
-        Destroy(this);
-        owner.collectDagger();
+        owner.collectDagger(this.gameObject);
         // instatiate death particles, and give them our velocity
         Instantiate(dgr_fizzle, transform.position, transform.rotation).GetComponent<Rigidbody2D>().velocity = rb.velocity * 0.3f;
     }
@@ -153,5 +164,25 @@ public class Dagger : MonoBehaviour
             if (cir.radius*2 > w)
                 w = cap.size.y*2;
         return w;
+    }
+
+    void checkScreenbounds()
+    {
+        Vector2 screen_pos = Camera.main.WorldToScreenPoint(transform.position);
+        if (screen_pos.x < 0 || screen_pos.x > Screen.width || screen_pos.y < 0 || screen_pos.y > Screen.height)
+        {
+            rb.velocity *= -1;
+            fizzleDagger();
+        }
+    }
+
+    float deflect_cd = 0;
+    public bool hasDeflected()
+    {
+        return deflect_cd > 0;
+    }
+    public void deflect()
+    {
+        deflect_cd = 1f;
     }
 }
