@@ -9,6 +9,7 @@ public class Player : MonoBehaviour
     [SerializeField] LayerMask LM;
 
     // Movement
+    public InputMaster controls;
     Rigidbody2D rb;
     [SerializeField] float mv_speed;
     //[SerializeField] float mv_accel;
