@@ -11,7 +11,10 @@ public class DaggerController : MonoBehaviour
         Heavy = 1 << 1,
         Homing = 1 << 2
     };
-    [SerializeField] Upgrades upgrades; // Dagger upgrades specifically. Does not count
+    [SerializeField] Upgrades upgrades;
+
+
+    [SerializeField] GameObject LineVFX;
 
     [SerializeField] LayerMask LM;
     [SerializeField] float dgr_throw_coeff;
@@ -277,21 +280,22 @@ public class DaggerController : MonoBehaviour
             }
         }
         Debug.DrawLine(dgr.transform.position + hitloc, pos, Color.green, 5);
+        if (!clear)
+            return; // No viable blink location
 
-        if (clear)
-        {
-            player.onBlinkEarly();
+        player.onBlinkEarly();
 
-            blink_cd = BLINK_COOLDOWN;
-            cooldown = DGR_COOLDOWN;
-            Vector2 travelled = pos - (Vector2)transform.position; 
-            transform.position = pos;
-            GetComponent<Rigidbody2D>().velocity += dgr.GetComponent<Rigidbody2D>().velocity * BLINK_INHERIT_VELOCITY_MULT;
-            collectDagger(dgr.gameObject);
-            GetComponent<Player>().jumping = false;
+        blink_cd = BLINK_COOLDOWN;
+        cooldown = DGR_COOLDOWN;
+        createLineVFX(transform.position, pos);
+        Vector2 travelled = pos - (Vector2)transform.position;
+        transform.position = pos;
+        GetComponent<Rigidbody2D>().velocity += dgr.GetComponent<Rigidbody2D>().velocity * BLINK_INHERIT_VELOCITY_MULT;
+        collectDagger(dgr.gameObject);
+        GetComponent<Player>().jumping = false;
 
-            player.onBlinkLate(travelled);
-        }
+        player.onBlinkLate(travelled);
+        
     }
 
 
@@ -457,5 +461,20 @@ public class DaggerController : MonoBehaviour
                 && lowest_diff > ((cursorpos - (Vector2)Camera.main.WorldToScreenPoint(heavy_dagger.transform.position)) / Screen.height).sqrMagnitude)
             return heavy_dagger;
         return dgr;
+    }
+
+    void createLineVFX(Vector2 a, Vector2 b)
+    {
+        GameObject Line = Instantiate(LineVFX);
+        float dist = (b - a).magnitude / 2f;
+        int p_count = (int)(dist * 100);
+        Vector2 mid = Vector2.Lerp(a, b, 0.5f);
+        Line.transform.position = mid;
+        Line.transform.LookAt(b);
+        ParticleSystem ps = Line.GetComponent<ParticleSystem>();
+        ParticleSystem.ShapeModule sm = ps.shape;
+        sm.radius = dist;
+        ParticleSystem.EmissionModule em = ps.emission;
+        em.rateOverTime = p_count;
     }
 }

@@ -67,18 +67,22 @@ public class Player : MonoBehaviour
             --wish_dir;
         if (Input.GetKey(KeyCode.D))
             ++wish_dir;
+        if (wallhang)
+            wish_dir = 0;
+
+        if (wish_jump || Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.A) || !Input.GetMouseButton(1))
+        {
+            wallhang = false;
+            grounded = true; // just for this frame
+        }
 
         Vector2 vel = rb.velocity;
-
-
         if (Mathf.Abs(vel.x) <= mv_speed + 0.01f) // less than max speed? (Epsilon accounts for floating point err)
             vel.x = wish_dir * mv_speed;
         else if (grounded)
             vel.x *= 0.9f;
         else if (Mathf.Sign(vel.x) != Math.Sign(wish_dir))
             vel.x *= 0.99f;
-        //    vel.x -= Mathf.Log(Mathf.Abs(vel.x))/vel.x;   //Debug.Log("TODO: air friction");
-        // air movement feels jank sometimes :\
 
 
         if (wish_jump && (grounded || wallhang) && !jumping) // this is to be updated
@@ -90,8 +94,6 @@ public class Player : MonoBehaviour
         {
             jumping = false;
         }
-        if (wish_jump || wish_dir != 0 || !Input.GetMouseButton(1))
-            wallhang = false;
 
         rb.velocity = vel;
     }

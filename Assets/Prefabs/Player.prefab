@@ -133,6 +133,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   upgrades: -1
+  LineVFX: {fileID: 1352593510187488914, guid: 35d4856b884af204d9b81c358fded1aa, type: 3}
   LM:
     serializedVersion: 2
     m_Bits: 1
