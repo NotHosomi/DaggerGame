@@ -22,6 +22,7 @@ public class Player : MonoBehaviour
     [SerializeField] float mv_jumpforce;
     public bool jumping = false;
     Vector2 reset_pos;
+    bool wallhang = false;
 
     public bool has_control = true;
     public float grav_coeff = 1;
@@ -80,7 +81,7 @@ public class Player : MonoBehaviour
         // air movement feels jank sometimes :\
 
 
-        if (wish_jump && grounded && !jumping) // this is to be updated
+        if (wish_jump && (grounded || wallhang) && !jumping) // this is to be updated
         {
             jumping = true;
             vel.y = mv_jumpforce;
@@ -89,6 +90,8 @@ public class Player : MonoBehaviour
         {
             jumping = false;
         }
+        if (wish_jump || wish_dir != 0 || !Input.GetMouseButton(1))
+            wallhang = false;
 
         rb.velocity = vel;
     }
@@ -96,7 +99,7 @@ public class Player : MonoBehaviour
     void applyGravity()
     {// no delta time used, this is in FixedUpdate
         Vector2 vel = rb.velocity;
-        if(grounded)
+        if(grounded || wallhang)
         {
             vel.y = 0;
             rb.velocity = vel;
@@ -231,7 +234,7 @@ public class Player : MonoBehaviour
 
         if(Input.GetMouseButton(1))
         {
-            // TODO: Wallhang
+            wallhang = true;
         }
     }
 
