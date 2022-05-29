@@ -7,7 +7,6 @@ using UnityEngine.Tilemaps;
 public class Player : MonoBehaviour
 {
     [SerializeField] LayerMask LM;
-    CamControl cc;
 
     // Movement
     Rigidbody2D rb;
@@ -41,7 +40,7 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
-        cc = Camera.main.GetComponent<CamControl>();
+        
     }
 
     /*
@@ -218,7 +217,7 @@ public class Player : MonoBehaviour
         // todo, put this in a coroutine with an animation
         transform.position = reset_pos;
         //move camera
-        cc.jumpCam(reset_pos);
+        GetComponent<CamControl>().jumpCam(reset_pos);
     }
 
     public void setRespawn(Vector2 pos)
@@ -232,7 +231,7 @@ public class Player : MonoBehaviour
     }
     public void onBlinkLate(Vector3 travelled)
     {
-        cc.setCamDisjoint(travelled);
+        GetComponent<CamControl>().setCamDisjoint(travelled);
     }
 
     private void OnDestroy()
@@ -258,7 +257,7 @@ public class Player : MonoBehaviour
         yield return new WaitForSecondsRealtime(0.15f);
 
         Time.timeScale = 1f;
-        rb.velocity = new Vector3((cc.facing_right ? -10 : 10), 8, 0); // change this
+        rb.velocity = new Vector3((GetComponent<CamControl>().facing_right ? -10 : 10), 8, 0); // change this
 
         yield return new WaitForSecondsRealtime(0.2f);
         has_control = true;

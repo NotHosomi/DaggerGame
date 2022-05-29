@@ -66,7 +66,7 @@ public class CamControl : MonoBehaviour
         pos.x = Mathf.Lerp(cam_target.x, lock_pos.x, x_blend);
         pos.y = Mathf.Lerp(cam_target.y, lock_pos.y, y_blend);
         cam.position = pos;
-        Debug.Log(pos);
+        //Debug.Log(pos);
         debugp = pos;
         debugp.z = 0;
     }
