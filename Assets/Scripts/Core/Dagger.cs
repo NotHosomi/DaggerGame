@@ -8,6 +8,7 @@ public class Dagger : MonoBehaviour
     [SerializeField] float return_speed;
     [SerializeField] float return_start_speed;
     [SerializeField] float return_jolt;
+    [SerializeField] bool blink_on_hit;
     float return_time = 0;
     public DaggerController owner;
     protected Rigidbody2D rb;
@@ -70,16 +71,13 @@ public class Dagger : MonoBehaviour
             Debug.DrawRay(hit_pos[i] + (Vector2)transform.position, hit_norm[i], Color.blue, 5);
         }
 
+        if (blink_on_hit)
+            owner.blink(this);
+
         OnHit(collision);
     }
-
     protected virtual void OnHit(Collision2D collision)
-    {
-        //if (collision.otherCollider.GetComponent<Enemy>())    // TODO: Add enemy
-        //  collision.otherCollider.GetComponent<Enemy>().damage(owner.damage);
-        //  owner.collectDagger(this.gameObject);
-        //  return;
-    }
+    {}
 
     public virtual void recall()
     {

@@ -39,11 +39,6 @@ public class Player : MonoBehaviour
         hp = GameManager.gm.current_hp;
     }
 
-    private void Start()
-    {
-        
-    }
-
     /*
     *  MOVEMENT 
     */
@@ -233,6 +228,11 @@ public class Player : MonoBehaviour
     public void onBlinkLate(Vector3 travelled)
     {
         GetComponent<CamControl>().setCamDisjoint(travelled);
+
+        if(Input.GetMouseButton(1))
+        {
+            // TODO: Wallhang
+        }
     }
 
     private void OnDestroy()

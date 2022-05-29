@@ -169,10 +169,11 @@ MonoBehaviour:
   dagger_prefabs:
   - {fileID: 5877394043869471899, guid: c58fcfe2e74f65c489bc27b33bc5cf26, type: 3}
   - {fileID: 3553015291524063667, guid: 40a58024eb71c1548bcffc264f023fc9, type: 3}
+  - {fileID: 540426924523793990, guid: 8ee11b9ee069963498aab22dcaf235ca, type: 3}
   max_daggers: 3
-  DGR_COOLDOWN: 0.5
+  DGR_COOLDOWN: 0.2
   BLINK_COOLDOWN: 0.5
-  BLINK_INHERIT_VELOCITY_MULT: 0.5
+  BLINK_INHERIT_VELOCITY_MULT: 0
 --- !u!114 &8046339177638784250
 MonoBehaviour:
   m_ObjectHideFlags: 0
